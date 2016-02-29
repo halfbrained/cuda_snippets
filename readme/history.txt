@@ -1,0 +1,17 @@
+
+1.1.0
++allows ins-point indexes 0..40
++allows nested (1 level) ins-points
+
+1.0.4 (feb 2016)
++cache list of snippers per lexer, faster
+
+1.0.3
++support ${date}
++menu for N snippets for one id<tab>
+
+1.0.1
++support ${sel} ${cp} ${fname}
+
+1.0.0 (nov 2015)
+init
