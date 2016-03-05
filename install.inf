@@ -3,6 +3,7 @@ title=Snippets
 desc=Supports snippets from SynWrite (snippets are expanded by Tab key or can be called in menu)
 type=cudatext-plugin
 subdir=cuda_snippets
+homepage=https://github.com/CudaText-addons/cuda_snippets
 
 [item1]
 section=events
