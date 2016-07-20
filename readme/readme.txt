@@ -5,6 +5,4 @@ Uses snippet-files (SynWrite format) in [CudaText]/data/snippets.
 Help at wiki:
 http://wiki.freepascal.org/CudaText#Snippets
 
-Author: Alexey T.
-License: MIT
-
+Author: Alexey T. (CudaText)
