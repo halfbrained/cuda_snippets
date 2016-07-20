@@ -7,6 +7,16 @@ from .proc_brackets import *
 SNIP_MAX_POINTS = 40
 
 
+def snip_get_lens(s):
+    """Gets (len_x, len_y) for multiline text, for ed.markers api"""
+    len_y = s.count('\n')
+    if len_y==0:
+        len_x = len(s)
+    else:
+        len_x = len(s) - s.rfind('\n') - 1
+    return (len_x, len_y)
+        
+
 def insert_snip_into_editor(ed, snip_lines):
     items = list(snip_lines) #copy list value
     if not items: return
@@ -57,59 +67,63 @@ def insert_snip_into_editor(ed, snip_lines):
     
     #parse tabstops ${0}, ${0:text}
     stops = []
-    for index in range(len(items)):
-        s = items[index]
-        while True:
-            digit = 0
-            deftext = ''
+    s = '\n'.join(items)
+    while True:
+        digit = 0
+        deftext = ''
             
-            n = s.find('${')
-            if n<0: break
+        n = s.find('${')
+        if n<0: break
             
+        n_end = find_matching_bracket(s, n+1, '{}')
+        if n_end is None:
+            print('Incorrect brackets ${..}') 
+            return
+            
+        text_in = s[n+2:n_end]
+        nested = False
+        nested_shift = 0
+            
+        #find nested ins-point
+        nn = text_in.find('${')
+        if nn>=0:
+            n = n+2+nn
             n_end = find_matching_bracket(s, n+1, '{}')
             if n_end is None:
-                print('Incorrect brackets ${..}') 
+                print('Incorrect nested brackets ${..}') 
                 return
-            
+                
             text_in = s[n+2:n_end]
-            nested = False
-            nested_shift = 0
-            
-            #find nested ins-point
-            nn = text_in.find('${')
-            if nn>=0:
-                n = n+2+nn
-                n_end = find_matching_bracket(s, n+1, '{}')
-                if n_end is None:
-                    print('Incorrect nested brackets ${..}') 
-                    return
+            nested = True
                 
-                text_in = s[n+2:n_end]
-                nested = True
-                
-            try:
-                if ':' in text_in:
-                    _separ = text_in.split(':')
-                    digit = int(_separ[0])
-                    deftext = _separ[1]
-                else:
-                    digit = int(text_in)
-            except:
-                print('Incorrect ins-point index: '+s)
-                return
+        try:
+            if ':' in text_in:
+                _separ = text_in.split(':')
+                digit = int(_separ[0])
+                deftext = _separ[1]
+            else:
+                digit = int(text_in)
+        except:
+            print('Incorrect ins-point index: '+s)
+            return
 
-            if nested:
-                nested_shift = len(str(digit))+3
+        if nested:
+            nested_shift = len(str(digit))+3
             
-            #delete spec-chars                    
-            s = s[:n]+deftext+s[n_end+1:]
-            items[index] = s
-            
-            stops += [(digit, deftext, index, n-nested_shift)]
+        #delete spec-chars                    
+        s = s[:n]+deftext+s[n_end+1:]
+
+        pos_y = s.count('\n', 0, n)
+        eol_pos = -1
+        for k in range(pos_y):
+            eol_pos = s.find('\n', eol_pos+1)
+        pos_x = n-nested_shift-eol_pos-1
+        
+        stops += [(digit, deftext, pos_y, pos_x)]
     #print('tabstops', stops)        
     
     #insert    
-    ed.insert(x0, y0, '\n'.join(items))
+    ed.insert(x0, y0, s)
     
     #place markers
     mark_placed = False
@@ -121,13 +135,22 @@ def insert_snip_into_editor(ed, snip_lines):
     for digit in digit_list: #order of stops: 1..max, 0
         for stop in reversed(stops): #reversed is for Emmet: many stops with ${0}
             if stop[0]==digit:
-                pos_x = stop[3]
+                deftext = stop[1]
                 pos_y = stop[2]
+                pos_x = stop[3]
                 if pos_y==0:
                     pos_x += x0
                 pos_y += y0
-                deftext = stop[1]
-                ed.markers(ct.MARKERS_ADD, pos_x, pos_y, digit, len(deftext))
+                
+                len_x, len_y = snip_get_lens(deftext)
+                
+                ed.markers(ct.MARKERS_ADD, 
+                    pos_x, 
+                    pos_y, 
+                    digit, 
+                    len_x,
+                    len_y
+                    )
                 mark_placed = True
     
     if mark_placed:

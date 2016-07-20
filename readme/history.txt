@@ -1,4 +1,7 @@
 
+2016.07.20
++ allows multi-line def text of ins-points (for complex snips)
+
 1.1.0
 +allows ins-point indexes 0..40
 +allows nested (1 level) ins-points
