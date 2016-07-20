@@ -15,12 +15,12 @@ def snip_get_lens(s):
     else:
         len_x = len(s) - s.rfind('\n') - 1
     return (len_x, len_y)
-        
+
 
 def insert_snip_into_editor(ed, snip_lines):
     items = list(snip_lines) #copy list value
     if not items: return
-    
+
     carets = ed.get_carets()
     if len(carets)!=1: return
     x0, y0, x1, y1 = carets[0]
@@ -31,7 +31,7 @@ def insert_snip_into_editor(ed, snip_lines):
     text_sel = ed.get_text_sel()
     text_clip = ct.app_proc(ct.PROC_GET_CLIP, '')
     text_filename = os.path.basename(ed.get_filename())
-    
+
     #strip file-ext
     n = text_filename.rfind('.')
     if n>=0:
@@ -43,17 +43,17 @@ def insert_snip_into_editor(ed, snip_lines):
         if (y1>y0) or ((y1==y0) and (x1>=x0)):
             pass
         else:
-            x0, y0, x1, y1 = x1, y1, x0, y0 
+            x0, y0, x1, y1 = x1, y1, x0, y0
         ed.delete(x0, y0, x1, y1)
-        ed.set_caret(x0, y0) 
-    
+        ed.set_caret(x0, y0)
+
     #apply indent to lines from second
     x_col, y_col = ed.convert(ct.CONVERT_CHAR_TO_COL, x0, y0)
     indent = ' '*x_col
-    
+
     if not tab_spaces:
         indent = indent.replace(' '*tab_size, '\t')
-    
+
     for i in range(1, len(items)):
         items[i] = indent+items[i]
 
@@ -64,38 +64,38 @@ def insert_snip_into_editor(ed, snip_lines):
 
     #parse macros
     snip_replace_macros_in_lines(items, text_sel, text_clip, text_filename)
-    
+
     #parse tabstops ${0}, ${0:text}
     stops = []
     s = '\n'.join(items)
     while True:
         digit = 0
         deftext = ''
-            
+
         n = s.find('${')
         if n<0: break
-            
+
         n_end = find_matching_bracket(s, n+1, '{}')
         if n_end is None:
-            print('Incorrect brackets ${..}') 
+            print('Incorrect brackets ${..}')
             return
-            
+
         text_in = s[n+2:n_end]
         nested = False
         nested_shift = 0
-            
+
         #find nested ins-point
         nn = text_in.find('${')
         if nn>=0:
             n = n+2+nn
             n_end = find_matching_bracket(s, n+1, '{}')
             if n_end is None:
-                print('Incorrect nested brackets ${..}') 
+                print('Incorrect nested brackets ${..}')
                 return
-                
+
             text_in = s[n+2:n_end]
             nested = True
-                
+
         try:
             if ':' in text_in:
                 _separ = text_in.split(':')
@@ -109,8 +109,8 @@ def insert_snip_into_editor(ed, snip_lines):
 
         if nested:
             nested_shift = len(str(digit))+3
-            
-        #delete spec-chars                    
+
+        #delete spec-chars
         s = s[:n]+deftext+s[n_end+1:]
 
         pos_y = s.count('\n', 0, n)
@@ -118,20 +118,20 @@ def insert_snip_into_editor(ed, snip_lines):
         for k in range(pos_y):
             eol_pos = s.find('\n', eol_pos+1)
         pos_x = n-nested_shift-eol_pos-1
-        
+
         stops += [(digit, deftext, pos_y, pos_x)]
-    #print('tabstops', stops)        
-    
-    #insert    
+    #print('tabstops', stops)
+
+    #insert
     ed.insert(x0, y0, s)
-    
+
     #place markers
     mark_placed = False
     ed.markers(ct.MARKERS_DELETE_ALL)
 
     #list: 0,max,max-1,...,3,2,1
     digit_list = [0] + list(range(SNIP_MAX_POINTS, 0, -1))
-    
+
     for digit in digit_list: #order of stops: 1..max, 0
         for stop in reversed(stops): #reversed is for Emmet: many stops with ${0}
             if stop[0]==digit:
@@ -141,18 +141,18 @@ def insert_snip_into_editor(ed, snip_lines):
                 if pos_y==0:
                     pos_x += x0
                 pos_y += y0
-                
+
                 len_x, len_y = snip_get_lens(deftext)
-                
-                ed.markers(ct.MARKERS_ADD, 
-                    pos_x, 
-                    pos_y, 
-                    digit, 
+
+                ed.markers(ct.MARKERS_ADD,
+                    pos_x,
+                    pos_y,
+                    digit,
                     len_x,
                     len_y
                     )
                 mark_placed = True
-    
+
     if mark_placed:
         ed.set_prop(ct.PROP_TAB_COLLECT_MARKERS, '1')
         ed.cmd(cudatext_cmd.cmd_Markers_GotoLastAndDelete)
