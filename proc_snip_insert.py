@@ -107,7 +107,7 @@ def insert_snip_into_editor(ed, snip_lines):
             print('Incorrect ins-point index: '+s)
             return
 
-        if nested:
+        if nested and deftext:
             nested_shift = len(str(digit))+3
 
         #delete spec-chars
