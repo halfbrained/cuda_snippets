@@ -83,6 +83,7 @@ def insert_snip_into_editor(ed, snip_lines):
         text_in = s[n+2:n_end]
         nested = False
         nested_shift = 0
+        nested_on_1st_line = True
 
         #find nested ins-point
         nn = text_in.find('${')
@@ -93,6 +94,7 @@ def insert_snip_into_editor(ed, snip_lines):
                 print('Incorrect nested brackets ${..}')
                 return
 
+            nested_on_1st_line = text_in.count('\n', 0, nn) == 0
             text_in = s[n+2:n_end]
             nested = True
 
@@ -107,7 +109,7 @@ def insert_snip_into_editor(ed, snip_lines):
             print('Incorrect ins-point index: '+s)
             return
 
-        if nested and deftext:
+        if nested and nested_on_1st_line:
             nested_shift = len(str(digit))+3
 
         #delete spec-chars

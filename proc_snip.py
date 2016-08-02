@@ -61,6 +61,12 @@ def get_filelist_with_subdirs(dir):
 
 def get_snip_list_of_dicts(dir):
     res=get_filelist_with_subdirs(dir)
+    
+    #debug
+    #for fn in res:
+        #print('file', fn)
+        #s = open(fn, encoding='utf8').read()
+    
     res=[parse_snip_content_to_dict(open(fn, encoding='utf8').read()) for fn in res]
     res=sorted(res, key=lambda d: d[SNIP_NAME])
     return res
