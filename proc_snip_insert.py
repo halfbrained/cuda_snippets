@@ -68,6 +68,8 @@ def insert_snip_into_editor(ed, snip_lines):
     #parse tabstops ${0}, ${0:text}
     stops = []
     s = '\n'.join(items)
+    s = s.replace('\\$', chr(1)) #handle escaped '$'
+
     while True:
         digit = 0
         deftext = ''
@@ -125,6 +127,8 @@ def insert_snip_into_editor(ed, snip_lines):
     #print('tabstops', stops)
 
     #insert
+
+    s = s.replace(chr(1), '$')
     ed.insert(x0, y0, s)
 
     #place markers
