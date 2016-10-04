@@ -67,22 +67,22 @@ def insert_snip_into_editor(ed, snip_lines):
 
     #parse tabstops ${0}, ${0:text}
     stops = []
-    s = '\n'.join(items)
-    s = s.replace('\\$', chr(1)) #handle escaped '$'
-
+    s_text = '\n'.join(items)
+    s_text = s_text.replace('\\$', chr(1)) #handle escaped '$'
+    
     while True:
         digit = 0
         deftext = ''
 
-        n = s.find('${')
+        n = s_text.find('${')
         if n<0: break
 
-        n_end = find_matching_bracket(s, n+1, '{}')
+        n_end = find_matching_bracket(s_text, n+1, '{}')
         if n_end is None:
             print('Incorrect brackets ${..}')
             return
 
-        text_in = s[n+2:n_end]
+        text_in = s_text[n+2:n_end]
         nested = False
         nested_shift = 0
         nested_on_1st_line = True
@@ -91,13 +91,13 @@ def insert_snip_into_editor(ed, snip_lines):
         nn = text_in.find('${')
         if nn>=0:
             n = n+2+nn
-            n_end = find_matching_bracket(s, n+1, '{}')
+            n_end = find_matching_bracket(s_text, n+1, '{}')
             if n_end is None:
                 print('Incorrect nested brackets ${..}')
                 return
 
             nested_on_1st_line = text_in.count('\n', 0, nn) == 0
-            text_in = s[n+2:n_end]
+            text_in = s_text[n+2:n_end]
             nested = True
 
         try:
@@ -108,28 +108,28 @@ def insert_snip_into_editor(ed, snip_lines):
             else:
                 digit = int(text_in)
         except:
-            print('Incorrect ins-point index: '+s)
+            print('Incorrect ins-point index: '+s_text)
             return
 
         if nested and nested_on_1st_line:
             nested_shift = len(str(digit))+3
 
         #delete spec-chars
-        s = s[:n]+deftext+s[n_end+1:]
+        s_text = s_text[:n]+deftext+s_text[n_end+1:]
 
-        pos_y = s.count('\n', 0, n)
+        pos_y = s_text.count('\n', 0, n)
         eol_pos = -1
         for k in range(pos_y):
-            eol_pos = s.find('\n', eol_pos+1)
+            eol_pos = s_text.find('\n', eol_pos+1)
         pos_x = n-nested_shift-eol_pos-1
 
         stops += [(digit, deftext, pos_y, pos_x)]
     #print('tabstops', stops)
 
     #insert
-
-    s = s.replace(chr(1), '$')
-    ed.insert(x0, y0, s)
+    
+    s_text = s_text.replace(chr(1), '$') #handle escaped '$'
+    ed.insert(x0, y0, s_text)
 
     #place markers
     mark_placed = False
@@ -162,3 +162,10 @@ def insert_snip_into_editor(ed, snip_lines):
     if mark_placed:
         ed.set_prop(ct.PROP_TAB_COLLECT_MARKERS, '1')
         ed.cmd(cudatext_cmd.cmd_Markers_GotoLastAndDelete)
+    else:
+        #place caret after text
+        len_x, len_y = snip_get_lens(s_text)
+        if len_y<=1:
+            ed.set_caret(x0+len_x, y0)
+        else:
+            ed.set_caret(len_x, y0+len_y)
