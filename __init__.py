@@ -27,9 +27,15 @@ class Command:
         print('Snippets found for lexers:', ', '.join(lexers))
 
         self.snips_sort = {}
-        for lexer in lexers:
-            _item = [data for data in snips if is_name_listed(lexer, data[SNIP_LEX])]
-            self.snips_sort[lexer] = _item
+        lexers_all = lexer_proc(LEXER_GET_LIST, '').splitlines()
+        
+        for lexer in lexers_all:
+            _items = [
+                data for data in snips if
+                (data[SNIP_LEX]=='') or
+                is_name_listed(lexer, data[SNIP_LEX])
+                ]
+            self.snips_sort[lexer] = _items
             #print('Snippers for', lexer)
             #print([item[SNIP_ID] for item in _item])
 
