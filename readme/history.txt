@@ -1,4 +1,11 @@
 
+2016.10.04
++ if snip misses ${}, caret placed to end
+- fix: if no lexers in snip, must be avail for all lexers
+
+2016.08.02
+- fix for nested insert-points ${ ${} }
+
 2016.07.20
 + allows multi-line def text of ins-points (for complex snips)
 
