@@ -27,7 +27,7 @@ class Command:
         print('Snippets found for lexers:', ', '.join(lexers))
 
         self.snips_sort = {}
-        lexers_all = lexer_proc(LEXER_GET_LIST, '').splitlines()
+        lexers_all = lexer_proc(LEXER_GET_LIST, '').splitlines() + ['']
         
         for lexer in lexers_all:
             _items = [
