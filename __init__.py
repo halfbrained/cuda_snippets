@@ -2,7 +2,7 @@ from cudatext import *
 from .proc_snip import *
 from .proc_snip_insert import *
 
-if app_api_version()<'1.0.150':
+if app_api_version()<'1.0.188':
     msg_box('Snippets plugin needs newer CudaText', MB_OK+MB_ICONERROR)
 
 
@@ -27,8 +27,8 @@ class Command:
         print('Snippets found for lexers:', ', '.join(lexers))
 
         self.snips_sort = {}
-        lexers_all = lexer_proc(LEXER_GET_LIST, '').splitlines() + ['']
-        
+        lexers_all = lexer_proc(LEXER_GET_LEXERS, True) + ['']
+
         for lexer in lexers_all:
             _items = [
                 data for data in snips if

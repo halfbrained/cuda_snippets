@@ -1,27 +1,31 @@
 
+2017.07.18
+- avoid using deprecated API
+
 2016.10.04
-+ if snip misses tabstops, caret placed to end
-- fix: if no lexers in snip, must be avail for all lexers
++ if snippet misses tab-stops, caret placed to end
+- fix: if no lexers in snippet, it must be available for all lexers
 
 2016.08.02
-- fix for nested ins-points ${ ${} }
+- fix for nested insert-points ${ ${} }
 
 2016.07.20
-+ allows multi-line def text of ins-points (for complex snips)
++ allows multi-line def text of insert-points (for complex snippets)
 
 1.1.0
-+allows ins-point indexes 0..40
-+allows nested (1 level) ins-points
++ allows insert-point indexes 0..40
++ allows nested (1 level) insert-points
 
 1.0.4 (feb 2016)
-+cache list of snippers per lexer, faster
++ cache list of snippets per lexer, faster
 
 1.0.3
-+support ${date}
-+menu for N snippets for one id<tab>
++ support macro ${date}
++ show menu for N snippets for one snippet id
 
 1.0.1
-+support ${sel} ${cp} ${fname}
++ support macros ${sel} ${cp} ${fname}
 
 1.0.0 (nov 2015)
 init
+
