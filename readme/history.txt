@@ -1,6 +1,6 @@
 
 2018.01.29
-- fix: must allow chars ]) after snippet name
+- fix: must allow chars )]} after snippet name
 
 2017.07.18
 - avoid using deprecated API

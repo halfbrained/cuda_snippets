@@ -3,7 +3,7 @@ import sys
 import string
 
 CHARS_SNIP = string.ascii_letters + string.digits + '_.'
-CHARS_ALLOWED_AFTER_SNIP = ' \t<>)]'
+CHARS_ALLOWED_AFTER_SNIP = ' \t<>)]}'
 
 SNIP_EXTENSION='.synw-snippet'
 SNIP_NAME='name'
