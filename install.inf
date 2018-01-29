@@ -1,6 +1,6 @@
 [info]
 title=Snippets
-desc=Supports snippets from SynWrite (snippets are expanded by Tab key or can be called in menu)
+desc=Snippets engine, described in CudaText wiki. Snippets are expanded by Tab-key or can be called from menu.
 type=cudatext-plugin
 subdir=cuda_snippets
 homepage=https://github.com/CudaText-addons/cuda_snippets
