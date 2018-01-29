@@ -2,9 +2,6 @@ from cudatext import *
 from .proc_snip import *
 from .proc_snip_insert import *
 
-if app_api_version()<'1.0.188':
-    msg_box('Snippets plugin needs newer CudaText', MB_OK+MB_ICONERROR)
-
 
 def is_name_listed(name, namelist):
     if not namelist: return True
