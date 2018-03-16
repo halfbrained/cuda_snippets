@@ -6,6 +6,7 @@ CHARS_SNIP = string.ascii_letters + string.digits + '_.'
 CHARS_ALLOWED_AFTER_SNIP = ' \t<>()[]{};\\'
 
 SNIP_EXTENSION='.synw-snippet'
+SNIP_EXTENSION2='.cuda-snippet'
 SNIP_NAME='name'
 SNIP_ID='id'
 SNIP_LEX='lex'
@@ -54,7 +55,7 @@ def get_filelist_with_subdirs(dir):
     res=[]
     for root, subdirs, files in os.walk(dir):
         for f in files:
-            if f.endswith(SNIP_EXTENSION):
+            if f.endswith(SNIP_EXTENSION) or f.endswith(SNIP_EXTENSION2):
                 res.append(os.path.join(root, f))
     return res
 

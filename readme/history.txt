@@ -1,4 +1,7 @@
 
+2018.03.16
++ allow snippet files have extension .cuda-snippet
+
 2018.01.29
 - fix: must allow chars )]} after snippet name
 
