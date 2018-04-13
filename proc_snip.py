@@ -2,8 +2,7 @@ import os
 import sys
 import string
 
-CHARS_SNIP = string.ascii_letters + string.digits + '_.'
-CHARS_ALLOWED_AFTER_SNIP = ' \t<>()[]{};\\'
+CHARS_SNIP = string.ascii_letters + string.digits + '_.$'
 
 SNIP_EXTENSION='.synw-snippet'
 SNIP_EXTENSION2='.cuda-snippet'
@@ -27,8 +26,6 @@ def get_snip_name_from_editor(ed):
     line = ed.get_text_line(y)
     #caret after lineend? stop
     if x>len(line): return
-    #caret on incorr char? stop
-    if x<len(line) and not line[x] in CHARS_ALLOWED_AFTER_SNIP: return
 
     x0=x
     while (x>0) and (line[x-1] in CHARS_SNIP): x-=1
