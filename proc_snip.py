@@ -1,11 +1,14 @@
 import os
 import sys
 import string
+from .proc_parse_simple import *
 
 CHARS_SNIP = string.ascii_letters + string.digits + '_.$'
 
 SNIP_EXTENSION='.synw-snippet'
 SNIP_EXTENSION2='.cuda-snippet'
+SNIP_EXTENSION_ALT='.cuda-snips'
+
 SNIP_NAME='name'
 SNIP_ID='id'
 SNIP_LEX='lex'
@@ -48,23 +51,21 @@ def parse_snip_content_to_dict(text):
     return res
 
 
-def get_filelist_with_subdirs(dir):
-    res=[]
+def get_snip_list_of_dicts(dir):
+    res1 = []
+    res2 = []
     for root, subdirs, files in os.walk(dir):
         for f in files:
             if f.endswith(SNIP_EXTENSION) or f.endswith(SNIP_EXTENSION2):
-                res.append(os.path.join(root, f))
-    return res
+                res1.append(os.path.join(root, f))
+            if f.endswith(SNIP_EXTENSION_ALT):
+                res2.append(os.path.join(root, f))
 
-
-def get_snip_list_of_dicts(dir):
-    res=get_filelist_with_subdirs(dir)
-
-    #debug
-    #for fn in res:
-        #print('file', fn)
-        #s = open(fn, encoding='utf8').read()
-
-    res=[parse_snip_content_to_dict(open(fn, encoding='utf8').read()) for fn in res]
-    res=sorted(res, key=lambda d: d[SNIP_NAME])
-    return res
+    result1 = [parse_snip_content_to_dict(open(fn, encoding='utf8').read()) for fn in res1]
+    
+    result2 = []
+    for fn in res2:
+        for line in open(fn, encoding='utf8'):
+            result2 += [parse_simple_snippet_line(line)]
+    
+    return sorted(result1+result2, key=lambda d: d[SNIP_NAME])
