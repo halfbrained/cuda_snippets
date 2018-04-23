@@ -1,7 +1,8 @@
-import os
 import sys
+import os
 import string
-from .proc_parse_simple import *
+from .proc_parse_std import parse_snippet_file
+from .proc_parse_simple import parse_simple_snippet_line
 
 CHARS_SNIP = string.ascii_letters + string.digits + '_.$'
 
@@ -35,22 +36,6 @@ def get_snip_name_from_editor(ed):
     return line[x:x0]
 
 
-def parse_snip_content_to_dict(text):
-    res={SNIP_NAME:'', SNIP_ID:'', SNIP_LEX:'', SNIP_TEXT:'' }
-    lines=text.splitlines()
-
-    for (index, line) in enumerate(lines):
-        if line==SNIP_TEXT+'=':
-            res[SNIP_TEXT] = [lines[i] for i in range(index+1, len(lines))]
-            break
-
-        for prefix in [SNIP_NAME, SNIP_ID, SNIP_LEX]:
-            if line.startswith(prefix+'='):
-                res[prefix] = line[len(prefix)+1:]
-
-    return res
-
-
 def get_snip_list_of_dicts(dir):
     res1 = []
     res2 = []
@@ -61,7 +46,7 @@ def get_snip_list_of_dicts(dir):
             if f.endswith(SNIP_EXTENSION_ALT):
                 res2.append(os.path.join(root, f))
 
-    result1 = [parse_snip_content_to_dict(open(fn, encoding='utf8').read()) for fn in res1]
+    result1 = [parse_snippet_file(open(fn, encoding='utf8').read()) for fn in res1]
     
     result2 = []
     for fn in res2:
