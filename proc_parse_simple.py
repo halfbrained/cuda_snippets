@@ -15,7 +15,7 @@ def parse_simple_snippet_line(line):
     """
     key     = line.split()[0]
     line    = line[len(key):].lstrip()
-                
+
     def opt_val(line, opt, defv):
         optv    = defv
         opt     = opt if opt[0]=='/' else '/'+opt+'='
@@ -30,7 +30,7 @@ def parse_simple_snippet_line(line):
                 optv    = mtch.group(1)
                 line    = line.replace(opt+optv, '').lstrip()
         return optv,line
-                
+
     name    = key
     lex     = ''
     if line[:3]=='/N=':
@@ -39,9 +39,9 @@ def parse_simple_snippet_line(line):
         lex,line    = opt_val(line, 'L', defv='')
     if line[:3]=='/N=':
         name,line   = opt_val(line, 'N', defv=name)
-                
+
     body    = line.lstrip()
     body    = body.replace('\\\\', chr(0))
-    body    = body.replace('\t', chr(9)).replace('\n', chr(10)).replace('\r', chr(13))
+    body    = body.replace('\\t', chr(9)).replace('\\n', chr(10)).replace('\\r', chr(13))
     body    = body.replace(chr(0), '\\')
     return {'id':key, 'name':name, 'lex':lex, 'text':body.splitlines() }

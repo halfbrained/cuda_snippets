@@ -1,4 +1,7 @@
 
+2018.04.23
+- fix for .cuda-snips format
+
 2018.04.20
 + added new format of snippet files - .cuda-snips, each file has several lines in format:
   id /L="lexer" /N="name" text text
