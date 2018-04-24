@@ -17,4 +17,8 @@ def parse_snippet_file(text):
             if line.startswith(prefix+'='):
                 res[prefix] = line[len(prefix)+1:]
 
-    return res
+    # check data correct
+    if res[SNIP_TEXT] and (res[SNIP_ID] or res[SNIP_NAME]):
+        return res
+    else:
+        return

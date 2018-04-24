@@ -46,7 +46,11 @@ def get_snip_list_of_dicts(dir):
             if f.endswith(SNIP_EXTENSION_ALT):
                 res2.append(os.path.join(root, f))
 
-    result1 = [parse_snippet_file(open(fn, encoding='utf8').read()) for fn in res1]
+    result1 = []
+    for fn in res1:
+        parse_data = parse_snippet_file(open(fn, encoding='utf8').read())
+        if parse_data: 
+            result1 += [parse_data]
     
     result2 = []
     for fn in res2:
