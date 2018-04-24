@@ -51,7 +51,9 @@ def get_snip_list_of_dicts(dir):
     result2 = []
     for fn in res2:
         for line in open(fn, encoding='utf8'):
-            if not line.startswith('#') and not line.startswith(' '):
-                result2 += [parse_simple_snippet_line(line)]
+            if line.strip() and line[0] not in ('#', ' '):
+                parse_data = parse_simple_snippet_line(line)
+                if parse_data:
+                    result2 += [parse_simple_snippet_line(line)]
     
     return sorted(result1+result2, key=lambda d: d[SNIP_NAME])
