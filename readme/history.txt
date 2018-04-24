@@ -1,5 +1,6 @@
 
-2018.04.23
+2018.04.24
+- advance .cuda-snips format, allow empty snippet id
 - fix for .cuda-snips format
 
 2018.04.20
