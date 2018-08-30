@@ -1,4 +1,7 @@
 
+2018.08.30
++ refactored
+
 2018.04.24
 - advance .cuda-snips format, allow empty snippet id
 - fix for .cuda-snips format
