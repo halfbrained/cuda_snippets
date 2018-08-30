@@ -37,27 +37,27 @@ def get_snip_name_from_editor(ed):
 
 
 def get_snip_list_of_dicts(dir):
-    res1 = []
-    res2 = []
+    files1 = []
+    files2 = []
     for root, subdirs, files in os.walk(dir):
         for f in files:
             if f.endswith(SNIP_EXTENSION) or f.endswith(SNIP_EXTENSION2):
-                res1.append(os.path.join(root, f))
+                files1.append(os.path.join(root, f))
             if f.endswith(SNIP_EXTENSION_ALT):
-                res2.append(os.path.join(root, f))
+                files2.append(os.path.join(root, f))
 
-    result1 = []
-    for fn in res1:
-        parse_data = parse_snippet_file(open(fn, encoding='utf8').read())
-        if parse_data: 
-            result1 += [parse_data]
+    r1 = []
+    for fn in files1:
+        d = parse_snippet_file(open(fn, encoding='utf8').read())
+        if d: 
+            r1.append(d)
     
-    result2 = []
-    for fn in res2:
-        for line in open(fn, encoding='utf8'):
-            if line.strip() and line[0] not in ('#', ' '):
-                parse_data = parse_simple_snippet_line(line)
-                if parse_data:
-                    result2 += [parse_data]
+    r2 = []
+    for fn in files2:
+        for s in open(fn, encoding='utf8').read().splitlines():
+            if s and s[0] not in ('#', ' '):
+                d = parse_simple_snippet_line(s.strip())
+                if d:
+                    r2.append(d)
     
-    return sorted(result1+result2, key=lambda d: d[SNIP_NAME])
+    return sorted(r1+r2, key=lambda d: d[SNIP_NAME])
