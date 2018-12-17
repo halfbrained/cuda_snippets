@@ -1,4 +1,9 @@
 
+2018.12.17
++ added macro ${cmt_start}
++ added macro ${cmt_end}
++ added macro ${cmt_line}
+
 2018.08.30
 + refactored
 
