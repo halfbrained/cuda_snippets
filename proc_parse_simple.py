@@ -50,7 +50,7 @@ def parse_simple_snippet_line(line):
     body    = line.lstrip()
     body    = body.replace('\\\\', chr(0))
     body    = body.replace('\\t', chr(9)).replace('\\n', chr(10)).replace('\\r', chr(13))
-    body    = body.replace(chr(0), '\\')
+    body    = body.replace(chr(0), '\\\\')
 
     if not body:
         return None
