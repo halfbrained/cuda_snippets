@@ -1,4 +1,9 @@
 
+2018.12.27
+- fix: .cuda-snips with line
+  nnn '\\${0:}'
+  was not handled Ok
+
 2018.12.17
 + added macro ${cmt_start}
 + added macro ${cmt_end}
