@@ -9,6 +9,7 @@ def is_name_listed(name, namelist):
 
 class Command:
     def __init__(self):
+        self.last_menu_snip  = ''
         self.do_load_snippets()
 
     def do_load_snippets(self):
@@ -74,8 +75,11 @@ class Command:
     def do_menu_for_items(self, items):
         names = [item[SNIP_NAME]+'\t'+item[SNIP_ID]+'  ['+item[SNIP_LEX]+']'
                 for item in items]
-        res = dlg_menu(MENU_LIST, '\n'.join(names))
+        ns = [n for n, item in enumerate(items) if self.last_menu_snip==item[SNIP_NAME]]
+        focused = 0 if not ns else ns[0]
+        res = dlg_menu(MENU_LIST, '\n'.join(names), focused=focused)
         if res is None: return
+        self.last_menu_snip = items[res][SNIP_NAME]
         insert_snip_into_editor(ed, items[res][SNIP_TEXT])
 
     def do_menu(self):
