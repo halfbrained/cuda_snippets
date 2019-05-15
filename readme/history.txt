@@ -1,4 +1,7 @@
 
+2019.05.15
++ snippet, last called from menu, is suggested on next menu show
+
 2018.12.27
 - fix: .cuda-snips with line
   nnn '\\${0:}'
