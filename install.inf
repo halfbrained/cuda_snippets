@@ -7,7 +7,7 @@ homepage=https://github.com/CudaText-addons/cuda_snippets
 
 [item1]
 section=events
-events=on_key
+events=on_key+
 keys=9
 
 [item2]
