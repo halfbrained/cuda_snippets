@@ -4,7 +4,9 @@ import string
 from .proc_parse_std import parse_snippet_file
 from .proc_parse_simple import parse_simple_snippet_line
 
-CHARS_SNIP = string.ascii_letters + string.digits + '_.$'
+CHARS_SNIP = string.ascii_letters + string.digits + '_.$>'
+# char '>' is here to disable plugin work after "ul>li",
+# to pass it to Emmet (which has lower event priority)
 
 SNIP_EXTENSION='.synw-snippet'
 SNIP_EXTENSION2='.cuda-snippet'
