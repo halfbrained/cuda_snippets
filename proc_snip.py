@@ -37,6 +37,9 @@ def get_snip_name_from_editor(ed):
     while (x>0) and (line[x-1] in CHARS_SNIP): x-=1
     return line[x:x0]
 
+def _readfile(fn):
+    return open(fn, encoding='utf8', errors='replace').read()
+    
 
 def get_snip_list_of_dicts(dir):
     files1 = []
@@ -50,13 +53,13 @@ def get_snip_list_of_dicts(dir):
 
     r1 = []
     for fn in files1:
-        d = parse_snippet_file(open(fn, encoding='utf8').read())
+        d = parse_snippet_file(_readfile(fn))
         if d: 
             r1.append(d)
     
     r2 = []
     for fn in files2:
-        for s in open(fn, encoding='utf8').read().splitlines():
+        for s in _readfile(fn).splitlines():
             if s and s[0] not in ('#', ' '):
                 d = parse_simple_snippet_line(s.strip())
                 if d:
