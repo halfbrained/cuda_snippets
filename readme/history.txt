@@ -1,4 +1,7 @@
 
+2020.07.16
+- fix: handle snippet-file utf-8 read errors
+
 2020.03.23
 + set higher priority of this plugin, so it is called before Emmet plugin on tab-key
 + disable plugin work after text "ul>li" so Emmet can handle it with lower priority
