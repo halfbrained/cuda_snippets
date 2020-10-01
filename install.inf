@@ -14,3 +14,18 @@ keys=9
 section=commands
 caption=Snippets
 method=do_menu
+
+[item3]
+section=commands
+caption=Delete snippet markers
+method=del_markers
+
+[item8]
+section=commands
+caption=Addons Manager\-
+method=_
+
+[item9]
+section=commands
+caption=Addons Manager\Install VS Snippets...
+method=install_vs_snip
