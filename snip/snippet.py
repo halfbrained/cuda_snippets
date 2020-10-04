@@ -249,53 +249,66 @@ class Snippet:
             cmt_end = ''
             cmt_line = ''
 
-        variables = {
+        ct_variables = {
             # cudatext macro
             '${sel}': text_sel,  # The currently selected text or the empty string
             '${cp}': clipboard,
             '${fname}': fn,
             '${cmt_start}': cmt_start,
             '${cmt_end}': cmt_end,
-            '${cmt_line}': cmt_line,
+            '${cmt_line}': cmt_line
+        }
+        ct_variables = OrderedDict(sorted(ct_variables.items(), reverse=True))
 
+        variables = {
             # The following variables can be used:
-            "$TM_SELECTED_TEXT": text_sel,  # The currently selected text or the empty string
-            "$TM_CURRENT_LINE": line,  # The contents of the current line
-            "$TM_CURRENT_WORD": word,  # The contents of the word under cursor or the empty string
-            "$TM_LINE_INDEX": str(y0),  # The zero-index based line number
-            "$TM_LINE_NUMBER": str(y0 + 1),  # The one-index based line number
-            "$TM_FILEPATH": fp,  # The full file path of the current document
-            "$TM_DIRECTORY": op.dirname(fp),  # The directory of the current document
-            "$TM_FILENAME": fn,  # The filename of the current document
-            "$TM_FILENAME_BASE": op.splitext(fn)[0],  # The filename of the current document without its extensions
-            "$CLIPBOARD": clipboard,  # The contents of your clipboard
-            "$WORKSPACE_NAME": "",  # The name of the opened workspace or folder
+            "TM_SELECTED_TEXT": text_sel,  # The currently selected text or the empty string
+            "TM_CURRENT_LINE": line,  # The contents of the current line
+            "TM_CURRENT_WORD": word,  # The contents of the word under cursor or the empty string
+            "TM_LINE_INDEX": str(y0),  # The zero-index based line number
+            "TM_LINE_NUMBER": str(y0 + 1),  # The one-index based line number
+            "TM_FILEPATH": fp,  # The full file path of the current document
+            "TM_DIRECTORY": op.dirname(fp),  # The directory of the current document
+            "TM_FILENAME": fn,  # The filename of the current document
+            "TM_FILENAME_BASE": op.splitext(fn)[0],  # The filename of the current document without its extensions
+            "CLIPBOARD": clipboard,  # The contents of your clipboard
+            "WORKSPACE_NAME": "",  # The name of the opened workspace or folder
 
             # For inserting the current date and time:
-            "$CURRENT_YEAR": strftime('%Y'),  # The current year
-            "$CURRENT_YEAR_SHORT": strftime('%y'),  # The current year's last two digits
-            "$CURRENT_MONTH": strftime('%m'),  # The month as two digits (example '02')
-            "$CURRENT_MONTH_NAME": strftime('%B'),  # The full name of the month (example 'July')
-            "$CURRENT_MONTH_NAME_SHORT": strftime('%B')[:4],  # The short name of the month (example 'Jul')
-            "$CURRENT_DATE": strftime('%d'),  # The day of the month
-            "$CURRENT_DAY_NAME": strftime('%A'),  # The name of day (example 'Monday')
-            "$CURRENT_DAY_NAME_SHORT": strftime('%a'),  # The short name of the day (example 'Mon')
-            "$CURRENT_HOUR": strftime('%H'),  # The current hour in 24-hour clock format
-            "$CURRENT_MINUTE": strftime('%M'),  # The current minute
-            "$CURRENT_SECOND": strftime('%S'),  # The current second
-            "$CURRENT_SECONDS_UNIX": str(int(time())),  # The number of seconds since the Unix epoch
+            "CURRENT_YEAR": strftime('%Y'),  # The current year
+            "CURRENT_YEAR_SHORT": strftime('%y'),  # The current year's last two digits
+            "CURRENT_MONTH": strftime('%m'),  # The month as two digits (example '02')
+            "CURRENT_MONTH_NAME": strftime('%B'),  # The full name of the month (example 'July')
+            "CURRENT_MONTH_NAME_SHORT": strftime('%B')[:4],  # The short name of the month (example 'Jul')
+            "CURRENT_DATE": strftime('%d'),  # The day of the month
+            "CURRENT_DAY_NAME": strftime('%A'),  # The name of day (example 'Monday')
+            "CURRENT_DAY_NAME_SHORT": strftime('%a'),  # The short name of the day (example 'Mon')
+            "CURRENT_HOUR": strftime('%H'),  # The current hour in 24-hour clock format
+            "CURRENT_MINUTE": strftime('%M'),  # The current minute
+            "CURRENT_SECOND": strftime('%S'),  # The current second
+            "CURRENT_SECONDS_UNIX": str(int(time())),  # The number of seconds since the Unix epoch
 
             # For inserting line or block comments, honoring the current language:
-            "$BLOCK_COMMENT_START": cmt_start,  # Example output: in PHP /* or in HTML <!--
-            "$BLOCK_COMMENT_END": cmt_end,  # Example output: in PHP */ or in HTML -->
-            "$LINE_COMMENT": cmt_line,  # Example output: in PHP //
+            "BLOCK_COMMENT_START": cmt_start,  # Example output: in PHP /* or in HTML <!--
+            "BLOCK_COMMENT_END": cmt_end,  # Example output: in PHP */ or in HTML -->
+            "LINE_COMMENT": cmt_line,  # Example output: in PHP //
         }
         variables = OrderedDict(sorted(variables.items(), reverse=True))
 
         for i, ln in enumerate(sn):
-            for var, v in variables.items():
-                # '${date:': ,  # no }
+            # replace ct variables
+            for var, v in ct_variables.items():
+                # replace '${date:': ,  # no }
                 ln = date_var(ln.replace(var, v))
+
+            # replace VS variables
+            for var, v in variables.items():
+                ln = ln.replace('$'+var, v)
+                ln = ln.replace('${'+var+'}', v)
+
+            # replace VS variables transform
+            # ln = re_var_transform.sub(transform_repl, ln)
+
             sn[i] = ln
         return sn
 
