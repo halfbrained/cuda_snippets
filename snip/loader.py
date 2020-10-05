@@ -12,6 +12,11 @@ SNIP_EXTENSION2 = '.cuda-snippet'
 SNIP_EXTENSION_ALT = '.cuda-snips'
 
 
+def mkdir(*args):
+    if not os.path.exists(args[0]):
+        os.mkdir(*args)
+
+
 def parse_vs_snippets_file(fp, lex):
     """Parser for Visual Studio/Code snippets file."""
     res = []
@@ -116,6 +121,9 @@ def parse_simple_snippet_line(fp):
 def load_snippets(basedir):
     vs_dir = os.path.join(basedir, 'snippets_vs')
     std_dir = os.path.join(basedir, 'snippets')
+    mkdir(vs_dir)
+    mkdir(std_dir)
+
     snips = {}
     glob = []  # ???? maybe not need global snippets
     # load std snips

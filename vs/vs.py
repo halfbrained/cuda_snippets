@@ -1,5 +1,4 @@
 ﻿import zipfile
-from zipfile import ZipFile
 from collections import namedtuple
 import os
 import shutil
@@ -47,10 +46,13 @@ def get_vs_snippets(src):
     for e in extensions:
         if 'Snippets' not in e.get("categories"):
             continue
+        _url = None
         for k in e.get("versions")[0].get("files"):
             if k.get("assetType") == "Microsoft.VisualStudio.Services.VSIXPackage":
                 _url = k.get('source')
                 break
+        if not _url:
+            break
         ext = Extension(
             name=e.get("extensionName", '-'),
             display_name=e.get("displayName", '-'),
