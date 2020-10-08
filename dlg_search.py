@@ -87,6 +87,7 @@ class Ini:
 class DlgSearch:
     def __init__(self):
         self.data = None
+        self.last_text = None
         self.cfg = Ini(os.path.join(ct.app_path(ct.APP_DIR_SETTINGS), "plugins.ini"))
 
         w, h = 600, 400
@@ -220,17 +221,20 @@ class DlgSearch:
     def togle_fuzzy_search(self, *args, **kwargs):
         self.is_fuzzy_search = not self.is_fuzzy_search
         ct.menu_proc(self.mi_fuzzy_search, ct.MENU_SET_CHECKED, command=self.is_fuzzy_search)
+        self.last_text = None
         self.search()
 
     def togle_whole_word_search(self, *args, **kwargs):
         self.is_whole_word_search = not self.is_whole_word_search
         ct.menu_proc(self.mi_whole_word_search, ct.MENU_SET_CHECKED, command=self.is_whole_word_search)
         ct.menu_proc(self.mi_fuzzy_search, ct.MENU_SET_ENABLED, command=not self.is_whole_word_search)
+        self.last_text = None
         self.search()
 
     def togle_search_in_descriptions(self, *args, **kwargs):
         self.is_search_in_descriptions = not self.is_search_in_descriptions
         ct.menu_proc(self.mi_search_in_descriptions, ct.MENU_SET_CHECKED, command=self.is_search_in_descriptions)
+        self.last_text = None
         self.search()
 
     def menu_show(self, *args, **kwargs):
@@ -322,6 +326,12 @@ class DlgSearch:
     def search(self, *args, **kwargs):
         """Find extensions."""
         name = self.text
+
+        if name == self.last_text:
+            return
+        else:
+            self.last_text = name
+
         if name:
             name = name.lower()
             self.exts = []
