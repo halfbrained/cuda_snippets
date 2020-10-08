@@ -15,6 +15,7 @@ TABSTOP = 0
 PLACEHOLDER = 1
 RE_TOKEN_PART = re.compile(r"(?<!\\)\$\d+|\${\d+:|\${|}")
 RE_DATE = re.compile(r'\${date:(.*?)}')
+RE_ENV = re.compile(r'\${env:(.*?)}')
 
 _tabstop = r"\$(\d+)"
 _placeholder_head = r"\${(\d+):?"
@@ -305,10 +306,21 @@ class Snippet:
     def parse_vars_ct(v, sn):
 
         def date_var(ln):
+            """${date:format}"""
             start = 0
             _ln = ""
             for p in RE_DATE.finditer(ln):
                 _ln += ln[start:p.start(0)] + strftime(p.group(1))
+                start = p.end(0)
+            _ln += ln[start:]
+            return _ln
+
+        def env_var(ln):
+            """${env:name}"""
+            start = 0
+            _ln = ""
+            for p in RE_ENV.finditer(ln):
+                _ln += ln[start:p.start(0)] + os.environ.get(p.group(1), '')
                 start = p.end(0)
             _ln += ln[start:]
             return _ln
@@ -328,12 +340,12 @@ class Snippet:
         }
         ct_variables = OrderedDict(sorted(ct_variables.items(), reverse=True))
 
+        # replace ct variables
         for i, ln in enumerate(sn):
-            # replace ct variables
+            ln = date_var(ln)
+            ln = env_var(ln)
             for var, v in ct_variables.items():
-                # replace '${date:': ,  # no }
-                ln = date_var(ln.replace(var, v))
-
+                ln = ln.replace(var, v)
             sn[i] = ln
         return sn
 
@@ -409,3 +421,8 @@ class Snippet:
 if __name__ == '__main__':
     ts = VariableState(ct.ed)
     print(vars(ts))
+    _sn = [
+        "${date:%Y}",
+        "${env:PATH}"
+    ]
+    print(Snippet().parse_vars_ct(ts, _sn))
