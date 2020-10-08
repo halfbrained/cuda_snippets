@@ -1,6 +1,6 @@
 Plugin for CudaText.
 Snippets engine, which is described in CudaText wiki:
-http://wiki.freepascal.org/CudaText#Snippets
+https://wiki.freepascal.org/CudaText_plugins#Snippets
 
 Now plugin also supports snippets from VS Code.
 It gives the command to install snippets from VS Code repositories.
