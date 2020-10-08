@@ -4,7 +4,7 @@ import cudatext as ct
 from cuda_snippets import vs
 
 
-# from cuda_dev import dev
+from cuda_dev import dev
 
 
 class DlgLexersCompare:
@@ -17,7 +17,7 @@ class DlgLexersCompare:
         w, h = 600, 400
         self.h = ct.dlg_proc(0, ct.DLG_CREATE)
         ct.dlg_proc(self.h, ct.DLG_PROP_SET,
-                    prop={'cap': 'Search snippets',
+                    prop={'cap': 'Setup snippet lexer(s)',
                           'w': w,
                           'h': h,
                           'resize': False,
@@ -42,6 +42,7 @@ class DlgLexersCompare:
                         'align': ct.ALIGN_LEFT,
                         'items': '\t'.join(self.items),
                         'val': 0,
+                        'sp_a': 4,
                         'on_click': self.load_state,
                          }
                     )
@@ -53,6 +54,7 @@ class DlgLexersCompare:
                         'w': w//2,
                         'align': ct.ALIGN_RIGHT,
                         'items': '\t'.join(self.lexers),
+                        'sp_a': 4,
                         'on_click': self.update_state,
                          }
                     )
@@ -61,12 +63,12 @@ class DlgLexersCompare:
         ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=self.b,
                     prop={
                         'name': 'b',
-                        'w': 60,
+                        'w': 100,
                         'a_l': None,
                         'a_r': ('g1', ']'),
                         'a_t': ('g1', '['),
-                        'sp_r': 25,
-                        'sp_t': 5,
+                        'sp_r': 4,
+                        'sp_t': 4,
                         'p': 'g1',
                         'cap': 'Ok',
                         'on_change': self.press_ok,
@@ -118,3 +120,19 @@ class DlgLexersCompare:
     def show(self):
         ct.dlg_proc(self.h, ct.DLG_SHOW_MODAL)
         ct.dlg_proc(self.h, ct.DLG_FREE)
+
+
+if __name__ == '__main__':
+    data = {
+        'name': 'js-jsx-snippets',
+        'version': '10.1.0',
+        'display_name': 'JS JSX Snippets',
+        'description': 'Simple extensions for React, Redux in JS with babel and ES6 syntax',
+        'files': {
+            'javascript': ['extension/snippets/snippets.json'],
+            'javascriptreact': ['extension/snippets/snippets.json'],
+            'typescript': ['extension/snippets/snippets.json'],
+            'typescriptreact': ['extension/snippets/snippets.json']
+        }
+    }
+    DlgLexersCompare(data).show()
