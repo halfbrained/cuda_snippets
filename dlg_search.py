@@ -1,10 +1,13 @@
 ﻿import threading
 import re
+import os
 
 import cudatext as ct
 from cuda_snippets import vs
 
 # from cuda_dev import dev
+
+PLUG = "snippets"
 
 
 def simple_search(sub: str, text: str):
@@ -67,9 +70,24 @@ def fuzzy(sub: str, text: str):
     return rating
 
 
+class Ini:
+    def __init__(self, file):
+        """Define .ini file"""
+        self.file = file
+
+    def read_int(self, section, key, defvalue):
+        """Reads single string from .ini file"""
+        return int(ct.ini_read(self.file, section, key, str(defvalue)))
+
+    def write_int(self, section, key, value):
+        """Write single string to .ini file"""
+        ct.ini_write(self.file, section, key, str(value))
+
+
 class DlgSearch:
     def __init__(self):
         self.data = None
+        self.cfg = Ini(os.path.join(ct.app_path(ct.APP_DIR_SETTINGS), "plugins.ini"))
 
         w, h = 600, 400
         GUI_HEIGHT = ct.app_proc(ct.PROC_GET_GUI_HEIGHT, '')
@@ -78,7 +96,8 @@ class DlgSearch:
                     prop={'cap': 'Search snippets',
                           'w': w,
                           'h': h,
-                          'resize': False,
+                          # 'resize': False,
+                          'border': ct.DBORDER_SIZE,
                           "keypreview": True,
                           'on_key_up': self.press_key,
                           }
@@ -228,8 +247,24 @@ class DlgSearch:
     def show(self):
         self.data = None
         self.search()
+        # set last dlg size
+        p = {
+            "w": self.cfg.read_int(PLUG, 'w', 600),
+            "h": self.cfg.read_int(PLUG, 'h', 400)
+        }
+        ct.dlg_proc(self.h, ct.DLG_PROP_SET, prop=p)
+        p = {'h': self.cfg.read_int(PLUG, 'spt', 60)}
+        ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=self.memo, prop=p)
+
         ct.dlg_proc(self.h, ct.DLG_SHOW_MODAL)
-        # ct.dlg_proc(self.h, ct.DLG_FREE)
+
+        # save last dlg size
+        p = ct.dlg_proc(self.h, ct.DLG_PROP_GET)
+        self.cfg.write_int(PLUG, 'w', p['w'])
+        self.cfg.write_int(PLUG, 'h', p['h'])
+        p = ct.dlg_proc(self.h, ct.DLG_CTL_PROP_GET, index=self.memo)
+        self.cfg.write_int(PLUG, 'spt', p['h'])
+
         return self.data
 
     def press_key(self, id_dlg, id_ctl, data='', info=''):
