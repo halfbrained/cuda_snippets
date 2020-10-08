@@ -1,7 +1,7 @@
 
 2020.10.02
 Big rework by @OlehL:
-+ new command "Install VS Snippets..." - to install snippets from VS Code Marketplace
++ new command "Install VSCode snippets..." - to install snippets from VS Code Marketplace
 + new command "Delete snippet markers" - clears all markers in the current editor tab
 + reworked snippets engine to support VS Code snippets
 + now you can insert snippet in another snippet
