@@ -4,7 +4,7 @@ import re
 
 from cuda_snippets.snip.utils import load_json
 
-from .snippet import Snippet
+from .snippet import Snippet, CT_SNIPPET, VS_SNIPPET
 # from cuda_dev import dev
 
 
@@ -27,7 +27,7 @@ def parse_vs_snippets_file(fp, lex):
                 t = v['body']
                 if isinstance(t, str):
                     t = t.splitlines()
-                res.append(Snippet(name=k, id=v['prefix'], text=t, lex=lex))
+                res.append(Snippet(name=k, id=v['prefix'], text=t, lex=lex, t=VS_SNIPPET))
             except TypeError or AttributeError:
                 continue
     return res
@@ -37,6 +37,7 @@ def parse_snippet_file(fp):
     """Parser for standard CudaText snippet file"""
     with open(fp, mode='r', encoding='utf-8') as f:
         res = Snippet()
+        res.type = CT_SNIPPET
 
         lines = f.read().splitlines()
         for index, line in enumerate(lines):
@@ -118,7 +119,7 @@ def parse_simple_snippet_line(fp):
 
             if not body:
                 continue
-            res.append(Snippet(name=name, id=[key], lex=lex, text=body.splitlines()))
+            res.append(Snippet(name=name, id=[key], lex=lex, text=body.splitlines(), t=CT_SNIPPET))
     return res
 
 

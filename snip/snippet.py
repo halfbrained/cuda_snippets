@@ -8,6 +8,8 @@ import cudatext as ct
 import cudatext_cmd
 # from cuda_dev import dev
 
+CT_SNIPPET = 0
+VS_SNIPPET = 1
 TABSTOP = 0
 PLACEHOLDER = 1
 RE_TOKEN_PART = re.compile(r"(?<!\\)\$\d+|\${\d+:|\${|}")
@@ -84,15 +86,41 @@ class Placeholder:
         self.tag = tag
 
 
+class VariableState:
+    def __init__(self, ed: ct.Editor):
+        self.fp = ed.get_filename()
+        self.fn = op.basename(self.fp)
+        x0, y0, x1, y1 = ed.get_carets()[0]
+        self.line_index = y0
+        self.text_sel = ed.get_text_sel()
+        self.clipboard = ct.app_proc(ct.PROC_GET_CLIP, '')
+        self.line = ed.get_text_line(y0)
+        self.word, _ = get_word_under_cursor(line, x0)
+
+        self.lexer = ed.get_prop(ct.PROP_LEXER_FILE)
+        prop = ct.lexer_proc(ct.LEXER_GET_PROP, lexer)
+        if prop:
+            prop_str = prop.get('c_str')
+            prop_line = prop.get('c_line')
+            self.cmt_start = prop_str[0] if prop_str else ''
+            self.cmt_end = prop_str[1] if prop_str else ''
+            self.cmt_line = prop_line if prop_line else ''
+        else:
+            self.cmt_start = ''
+            self.cmt_end = ''
+            self.cmt_line = ''
+
+
 class Snippet:
     """Base snippet class."""
-    __slots__ = ['name', 'id', 'lex', 'text']
+    __slots__ = ['name', 'id', 'lex', 'text', 'type']
 
-    def __init__(self, name='', id: typing.List = '', lex='', text=None):
+    def __init__(self, name='', id: typing.List = '', lex='', text=None, t=0):
         self.name = name
         self.id = id if isinstance(id, list) else [id]
         self.lex = lex
         self.text = [text] if isinstance(text, str) else text
+        self.type = t
 
     def __repr__(self):
         lex = ', '.join(self.lex) if isinstance(self.lex, list) else self.lex
@@ -135,7 +163,11 @@ class Snippet:
             sn = [item.replace('\t', indent) for item in sn]
 
         # parse variables
-        sn = self.parse_vars_vs(ed, sn)
+        vars_state = VariableState(ed)
+        if self.type == VS_SNIPPET:
+            sn = self.parse_vars_vs(vars_state, sn)
+        else:
+            sn = self.parse_vars_ct(vars_state, sn)
 
         # delete selection
         text_sel = ed.get_text_sel()
@@ -217,61 +249,19 @@ class Snippet:
                 ed.set_caret(len_x, y0 + len_y)
 
     @staticmethod
-    def parse_vars_vs(ed, sn):
-
-        def date_var(ln):
-            start = 0
-            _ln = ""
-            for p in RE_DATE.finditer(ln):
-                _ln += ln[start:p.start(0)+1] + strftime(p.group(1))
-                start = p.end(0)
-            _ln += ln[start:]
-            return _ln
-
-        fp = ed.get_filename()
-        fn = op.basename(fp)
-        x0, y0, x1, y1 = ed.get_carets()[0]
-        text_sel = ed.get_text_sel()
-        clipboard = ct.app_proc(ct.PROC_GET_CLIP, '')
-        line = ed.get_text_line(y0)
-        word, _ = get_word_under_cursor(line, x0)
-
-        lexer = ed.get_prop(ct.PROP_LEXER_FILE)
-        prop = ct.lexer_proc(ct.LEXER_GET_PROP, lexer)
-        if prop:
-            prop_str = prop.get('c_str')
-            prop_line = prop.get('c_line')
-            cmt_start = prop_str[0] if prop_str else ''
-            cmt_end = prop_str[1] if prop_str else ''
-            cmt_line = prop_line if prop_line else ''
-        else:
-            cmt_start = ''
-            cmt_end = ''
-            cmt_line = ''
-
-        ct_variables = {
-            # cudatext macro
-            '${sel}': text_sel,  # The currently selected text or the empty string
-            '${cp}': clipboard,
-            '${fname}': fn,
-            '${cmt_start}': cmt_start,
-            '${cmt_end}': cmt_end,
-            '${cmt_line}': cmt_line
-        }
-        ct_variables = OrderedDict(sorted(ct_variables.items(), reverse=True))
-
+    def parse_vars_vs(v, sn):
         variables = {
             # The following variables can be used:
-            "TM_SELECTED_TEXT": text_sel,  # The currently selected text or the empty string
-            "TM_CURRENT_LINE": line,  # The contents of the current line
-            "TM_CURRENT_WORD": word,  # The contents of the word under cursor or the empty string
-            "TM_LINE_INDEX": str(y0),  # The zero-index based line number
-            "TM_LINE_NUMBER": str(y0 + 1),  # The one-index based line number
-            "TM_FILEPATH": fp,  # The full file path of the current document
-            "TM_DIRECTORY": op.dirname(fp),  # The directory of the current document
-            "TM_FILENAME": fn,  # The filename of the current document
-            "TM_FILENAME_BASE": op.splitext(fn)[0],  # The filename of the current document without its extensions
-            "CLIPBOARD": clipboard,  # The contents of your clipboard
+            "TM_SELECTED_TEXT": v.text_sel,  # The currently selected text or the empty string
+            "TM_CURRENT_LINE": v.line,  # The contents of the current line
+            "TM_CURRENT_WORD": v.word,  # The contents of the word under cursor or the empty string
+            "TM_LINE_INDEX": str(v.line_index),  # The zero-index based line number
+            "TM_LINE_NUMBER": str(v.line_index + 1),  # The one-index based line number
+            "TM_FILEPATH": v.fp,  # The full file path of the current document
+            "TM_DIRECTORY": op.dirname(v.fp),  # The directory of the current document
+            "TM_FILENAME": v.fn,  # The filename of the current document
+            "TM_FILENAME_BASE": op.splitext(v.fn)[0],  # The filename of the current document without its extensions
+            "CLIPBOARD": v.clipboard,  # The contents of your clipboard
             "WORKSPACE_NAME": "",  # The name of the opened workspace or folder
 
             # For inserting the current date and time:
@@ -289,25 +279,49 @@ class Snippet:
             "CURRENT_SECONDS_UNIX": str(int(time())),  # The number of seconds since the Unix epoch
 
             # For inserting line or block comments, honoring the current language:
-            "BLOCK_COMMENT_START": cmt_start,  # Example output: in PHP /* or in HTML <!--
-            "BLOCK_COMMENT_END": cmt_end,  # Example output: in PHP */ or in HTML -->
-            "LINE_COMMENT": cmt_line,  # Example output: in PHP //
+            "BLOCK_COMMENT_START": v.cmt_start,  # Example output: in PHP /* or in HTML <!--
+            "BLOCK_COMMENT_END": v.cmt_end,  # Example output: in PHP */ or in HTML -->
+            "LINE_COMMENT": v.cmt_line,  # Example output: in PHP //
         }
         variables = OrderedDict(sorted(variables.items(), reverse=True))
+
+        for i, ln in enumerate(sn):
+            # replace VS variables
+            for var, v in variables.items():
+                ln = ln.replace('$'+var, v)
+                ln = ln.replace('${'+var+'}', v)
+
+            sn[i] = ln
+        return sn
+
+    @staticmethod
+    def parse_vars_ct(v, sn):
+
+        def date_var(ln):
+            start = 0
+            _ln = ""
+            for p in RE_DATE.finditer(ln):
+                _ln += ln[start:p.start(0)] + strftime(p.group(1))
+                start = p.end(0)
+            _ln += ln[start:]
+            return _ln
+
+        ct_variables = {
+            # cudatext macro
+            '${sel}': v.text_sel,  # The currently selected text or the empty string
+            '${cp}': v.clipboard,
+            '${fname}': v.fn,
+            '${cmt_start}': v.cmt_start,
+            '${cmt_end}': v.cmt_end,
+            '${cmt_line}': v.cmt_line
+        }
+        ct_variables = OrderedDict(sorted(ct_variables.items(), reverse=True))
 
         for i, ln in enumerate(sn):
             # replace ct variables
             for var, v in ct_variables.items():
                 # replace '${date:': ,  # no }
                 ln = date_var(ln.replace(var, v))
-
-            # replace VS variables
-            for var, v in variables.items():
-                ln = ln.replace('$'+var, v)
-                ln = ln.replace('${'+var+'}', v)
-
-            # replace VS variables transform
-            # ln = re_var_transform.sub(transform_repl, ln)
 
             sn[i] = ln
         return sn
