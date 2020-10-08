@@ -48,10 +48,12 @@ def make_exts_list(src):
         if not _url:
             continue
         stat = 0
-        for k in e.get("statistics"):
-            if k.get("statisticName") == 'install':
-                stat = k.get("value", 0)
-                continue
+        statistic = e.get("statistics")
+        if statistic:
+            for k in statistic:
+                if k.get("statisticName") == 'install':
+                    stat = k.get("value", 0)
+                    break
         ext = {
             'name': e.get("extensionName", '-'),
             'display_name': e.get("displayName", '-'),
@@ -130,11 +132,9 @@ def get_all_snip_exts():
     def get_res(page_number):
         res = query_all_snips_extensions(500, page_number)
         if not res:
-            print(page_number, 'not res')
             return
         with lock_exts:
             result.extend(res)
-        print(page_number, 'done')
 
     # dev.tstart()
     threds = []

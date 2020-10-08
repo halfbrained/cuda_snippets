@@ -226,6 +226,7 @@ class DlgSearch:
         self.exts = self.vs_exts.copy()
 
     def show(self):
+        self.data = None
         self.search()
         ct.dlg_proc(self.h, ct.DLG_SHOW_MODAL)
         # ct.dlg_proc(self.h, ct.DLG_FREE)
