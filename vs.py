@@ -5,11 +5,13 @@ import shutil
 import json
 import requests
 import tempfile
+import threading as th
 from typing import Dict
 
 # from cuda_dev import dev
 
 
+lock_exts = th.Lock()
 TEMPDIR = os.path.join(tempfile.gettempdir(), 'cudatext')
 TEMPFILE = os.path.join(TEMPDIR, 'sn.vsix')
 URL = "https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery"
@@ -18,15 +20,6 @@ HEAD = {
     "accept-encoding": "gzip, deflate, br",
     "content-type": "application/json",
 }
-Extension = namedtuple(
-    'Extension',
-    ["name",
-     "display_name",
-     "description",
-     "version",
-     "url"
-     ]
-)
 
 
 def mkdir(*args):
@@ -38,9 +31,10 @@ def mkdir(*args):
 mkdir(TEMPDIR)
 
 
-def get_vs_snippets(src):
+def make_exts_list(src):
     """Make Extension list.
     """
+    # dev(src)
     extensions = src.get('results')[0].get("extensions")
     extensions_list = []
     for e in extensions:
@@ -52,19 +46,25 @@ def get_vs_snippets(src):
                 _url = k.get('source')
                 break
         if not _url:
-            break
-        ext = Extension(
-            name=e.get("extensionName", '-'),
-            display_name=e.get("displayName", '-'),
-            description=e.get("shortDescription", ''),
-            version=e.get("versions", [{}])[0].get("version", ''),
-            url=_url,
-            )
+            continue
+        stat = 0
+        for k in e.get("statistics"):
+            if k.get("statisticName") == 'install':
+                stat = k.get("value", 0)
+                continue
+        ext = {
+            'name': e.get("extensionName", '-'),
+            'display_name': e.get("displayName", '-'),
+            'description': e.get("shortDescription", ''),
+            'version': e.get("versions", [{}])[0].get("version", ''),
+            'url': _url,
+            'stat': stat,
+            }
         extensions_list.append(ext)
     return extensions_list
 
 
-def get_extensions(name='', page_size=100, page_number=1):
+def query_extensions_by_name(name='', page_size=100, page_number=1):
     """Get snippets extensions list by name.
 
     :param name: name for search snippets extensions
@@ -93,12 +93,12 @@ def get_extensions(name='', page_size=100, page_number=1):
     }
     r = requests.post(URL, headers=HEAD, json=payload)
     if r.status_code == 200:
-        return get_vs_snippets(r.json())
+        return make_exts_list(r.json())
     else:
         return []
 
 
-def get_all_snips_extensions(pageSize=100, pageNumber=1):
+def query_all_snips_extensions(page_size=50, page_number=1):
     payload = {
         "filters": [
             {
@@ -108,8 +108,8 @@ def get_all_snips_extensions(pageSize=100, pageNumber=1):
                     {"filterType": 12, "value": "37888"},
                     {"filterType": 5, "value": "Snippets"},
                 ],
-                "pageSize": pageSize,
-                "pageNumber": pageNumber,
+                "pageSize": page_size,
+                "pageNumber": page_number,
                 "sortBy": 4,
                 "sortOrder": 0,
             }
@@ -119,16 +119,37 @@ def get_all_snips_extensions(pageSize=100, pageNumber=1):
     }
     r = requests.post(URL, headers=HEAD, json=payload)
     if r.status_code == 200:
-        return r.json()
+        return make_exts_list(r.json())
+    else:
+        return []
 
 
-def download(url, file_name=TEMPFILE):
-    """Download extension by url, and save into file_name"""
-    with open(file_name, "wb") as file:
-        r = requests.get(url)
-        if r.status_code == 200:
-            file.write(r.content)
-            return file_name
+def get_all_snip_exts():
+    result = []
+
+    def get_res(page_number):
+        res = query_all_snips_extensions(500, page_number)
+        if not res:
+            print(page_number, 'not res')
+            return
+        with lock_exts:
+            result.extend(res)
+        print(page_number, 'done')
+
+    # dev.tstart()
+    threds = []
+    try:
+        for i in range(1, 10):
+            t = th.Thread(target=get_res, args=(i,))
+            threds.append(t)
+            t.start()
+        for i in threds:
+            i.join()
+        # dev.tstop()
+        # dev(len(result))
+    except requests.exceptions.ConnectionError:
+        print("Connection error :(")
+    return result
 
 
 def prepare_vs_snips(f):
@@ -138,7 +159,6 @@ def prepare_vs_snips(f):
     with zipfile.ZipFile(f) as _zip:
         with _zip.open('extension/package.json') as package:
             _f = package.read().decode('utf8')
-            # print(_f)
             js = json.loads(_f)
             vs = {
                 'ext': f,
@@ -147,7 +167,6 @@ def prepare_vs_snips(f):
                 'display_name': js.get('displayName'),
                 'description': js.get('description'),
             }
-            # print(js['name'])
             contributes = js.get('contributes')
             if not contributes:
                 return
@@ -166,6 +185,15 @@ def prepare_vs_snips(f):
                 files[lang] = paths
             vs['files'] = files
             return vs
+
+
+def download(url, file_name=TEMPFILE):
+    """Download extension by url, and save into file_name"""
+    with open(file_name, "wb") as file:
+        r = requests.get(url)
+        if r.status_code == 200:
+            file.write(r.content)
+            return prepare_vs_snips(file_name)
 
 
 def install_vs_snips(path, vs: Dict):
@@ -201,6 +229,4 @@ def install_vs_snips(path, vs: Dict):
 
 
 if __name__ == '__main__':
-    # print(get_extensions('java'))
-    print(TEMPDIR)
-    # print(get_snips_extensions())
+    print(len(get_all_snip_exts()))

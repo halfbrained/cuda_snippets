@@ -1,6 +1,8 @@
 import cudatext as ct
-from cuda_snippets import ui
+from cuda_snippets.dlg_lexers_compare import DlgLexersCompare
+from cuda_snippets.dlg_search import DlgSearch
 from cuda_snippets.snip import load_snippets, get_word
+from cuda_snippets import vs
 
 
 class Command:
@@ -63,9 +65,21 @@ class Command:
         self.menu_dlg(self.lex_snippets)
 
     def install_vs_snip(self):
-        d = ui.DlgSearch().show()
-        if d:
-            ui.DlgLexersCompare(d).show()
+        # load vs snippets list
+        if not hasattr(self, 'vs_exts') or not self.vs_exts:
+            ct.msg_status("Loading VS Snippets list. Please wait...", process_messages=True)
+            self.vs_exts = vs.get_all_snip_exts()
+            if not self.vs_exts:
+                print("Can't download VS Snippets. Try later.")
+                return
+        # make dlg
+        if not hasattr(self, "dlg_search"):
+            self.dlg_search = DlgSearch()
+        self.dlg_search.set_vs_exts(self.vs_exts)
+        data = self.dlg_search.show()
+        if not data:
+            return
+        DlgLexersCompare(data).show()
         self.do_load_snippets()
 
     @staticmethod

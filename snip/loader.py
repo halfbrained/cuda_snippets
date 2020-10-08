@@ -5,6 +5,7 @@ import re
 from cuda_snippets.snip.utils import load_json
 
 from .snippet import Snippet
+# from cuda_dev import dev
 
 
 SNIP_EXTENSION = '.synw-snippet'
@@ -22,10 +23,13 @@ def parse_vs_snippets_file(fp, lex):
     res = []
     with open(fp, mode='r', encoding='utf-8') as f:
         for k, v in load_json(f).items():
-            t = v['body']
-            if isinstance(t, str):
-                t = t.splitlines()
-            res.append(Snippet(name=k, id=v['prefix'], text=t, lex=lex))
+            try:
+                t = v['body']
+                if isinstance(t, str):
+                    t = t.splitlines()
+                res.append(Snippet(name=k, id=v['prefix'], text=t, lex=lex))
+            except TypeError or AttributeError:
+                continue
     return res
 
 

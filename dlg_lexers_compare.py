@@ -1,7 +1,9 @@
 ﻿import os
 
 import cudatext as ct
-from cuda_snippets.vs import vs
+from cuda_snippets import vs
+
+
 # from cuda_dev import dev
 
 
