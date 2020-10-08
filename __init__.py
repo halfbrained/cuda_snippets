@@ -53,11 +53,14 @@ class Command:
 
     def menu_dlg(self, items):
         names = [str(item) for item in items]
+        if not names:
+            ct.msg_status('No snippets for current lexer')
+            return
         try:
             focused = items.index(self.last_snippet)
         except ValueError:
             focused = 0
-        i = ct.dlg_menu(ct.MENU_LIST, names, focused=focused)
+        i = ct.dlg_menu(ct.MENU_LIST, names, focused=focused, caption='Snippets')
         if i is None:
             return
         self.last_snippet = items[i]
