@@ -7,6 +7,8 @@ from cuda_snippets import vs
 
 class Command:
     def __init__(self):
+        self.vs_exts = None
+        self.dlg_search = DlgSearch()
         self.last_snippet = None
         self.do_load_snippets()
         self.add_menu_items()
@@ -66,15 +68,13 @@ class Command:
 
     def install_vs_snip(self):
         # load vs snippets list
-        if not hasattr(self, 'vs_exts') or not self.vs_exts:
+        if not self.vs_exts:
             ct.msg_status("Loading VS Snippets list. Please wait...", process_messages=True)
             self.vs_exts = vs.get_all_snip_exts()
             if not self.vs_exts:
-                print("Can't download VS Snippets. Try later.")
+                print("Can't download VS Snippets. Try again later...")
                 return
-        # make dlg
-        if not hasattr(self, "dlg_search"):
-            self.dlg_search = DlgSearch()
+        # show dlg
         self.dlg_search.set_vs_exts(self.vs_exts)
         data = self.dlg_search.show()
         if not data:
