@@ -2,6 +2,7 @@ import re
 import typing
 from collections import OrderedDict
 from os import path as op
+import os
 from time import strftime, time
 
 import cudatext as ct
@@ -89,16 +90,22 @@ class Placeholder:
 class VariableState:
     def __init__(self, ed: ct.Editor):
         self.fp = ed.get_filename()
-        self.fn = op.basename(self.fp)
+        if op.exists(self.fp):
+            self.fn = op.basename(self.fp)
+            self.fdir = op.dirname(self.fp)
+        else:
+            self.fn = ''
+            self.fdir = ''
+
         x0, y0, x1, y1 = ed.get_carets()[0]
         self.line_index = y0
         self.text_sel = ed.get_text_sel()
         self.clipboard = ct.app_proc(ct.PROC_GET_CLIP, '')
         self.line = ed.get_text_line(y0)
-        self.word, _ = get_word_under_cursor(line, x0)
+        self.word, _ = get_word_under_cursor(self.line, x0)
 
         self.lexer = ed.get_prop(ct.PROP_LEXER_FILE)
-        prop = ct.lexer_proc(ct.LEXER_GET_PROP, lexer)
+        prop = ct.lexer_proc(ct.LEXER_GET_PROP, self.lexer)
         if prop:
             prop_str = prop.get('c_str')
             prop_line = prop.get('c_line')
@@ -258,7 +265,7 @@ class Snippet:
             "TM_LINE_INDEX": str(v.line_index),  # The zero-index based line number
             "TM_LINE_NUMBER": str(v.line_index + 1),  # The one-index based line number
             "TM_FILEPATH": v.fp,  # The full file path of the current document
-            "TM_DIRECTORY": op.dirname(v.fp),  # The directory of the current document
+            "TM_DIRECTORY": v.fdir,  # The directory of the current document
             "TM_FILENAME": v.fn,  # The filename of the current document
             "TM_FILENAME_BASE": op.splitext(v.fn)[0],  # The filename of the current document without its extensions
             "CLIPBOARD": v.clipboard,  # The contents of your clipboard
@@ -311,9 +318,13 @@ class Snippet:
             '${sel}': v.text_sel,  # The currently selected text or the empty string
             '${cp}': v.clipboard,
             '${fname}': v.fn,
+            '${fpath}': v.fp,
+            '${fdir}': v.fdir,
+            '${fext}': op.splitext(v.fn)[1],
             '${cmt_start}': v.cmt_start,
             '${cmt_end}': v.cmt_end,
-            '${cmt_line}': v.cmt_line
+            '${cmt_line}': v.cmt_line,
+            '${psep}': os.sep,
         }
         ct_variables = OrderedDict(sorted(ct_variables.items(), reverse=True))
 
@@ -393,3 +404,8 @@ class Snippet:
 
         markers.sort(key=lambda k: k['tag'], reverse=True)
         return sn, zero_markers, markers
+
+
+if __name__ == '__main__':
+    ts = VariableState(ct.ed)
+    print(vars(ts))

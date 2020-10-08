@@ -4,7 +4,7 @@ import cudatext as ct
 from cuda_snippets import vs
 
 
-from cuda_dev import dev
+# from cuda_dev import dev
 
 
 class DlgLexersCompare:
