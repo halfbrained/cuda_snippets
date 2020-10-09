@@ -28,7 +28,7 @@ def parse_vs_snippets_file(fp, lex):
                 if isinstance(t, str):
                     t = t.splitlines()
                 res.append(Snippet(name=k, id=v['prefix'], text=t, lex=lex, t=VS_SNIPPET))
-            except TypeError or AttributeError:
+            except Exception:
                 continue
     return res
 
