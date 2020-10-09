@@ -135,6 +135,16 @@ def parse_simple_snippet_line(fp):
     return res
 
 
+def load_vs_snip_exts(vs_dir):
+    for folder in os.scandir(vs_dir):
+        config = os.path.join(vs_dir, folder, 'config.json')
+        if not os.path.exists(config):
+            continue
+
+        with open(config, 'r', encoding='utf-8') as _cfg:
+            yield folder, json.load(_cfg)
+
+
 def load_snippets(basedir):
     vs_dir = os.path.join(basedir, 'snippets_vs')
     std_dir = os.path.join(basedir, 'snippets')
@@ -163,19 +173,13 @@ def load_snippets(basedir):
                         glob.append(res)
 
     # load vs snips
-    for folder in os.scandir(vs_dir):
-        if not os.path.isdir(os.path.join(vs_dir, folder)):
-            continue
-
-        config = os.path.join(vs_dir, folder, 'config.json')
-        with open(config, 'r', encoding='utf-8') as _cfg:
-            cfg = json.load(_cfg)
-            files = cfg.get('files', {})
-            for fn, lexs in files.items():
-                fp = os.path.join(vs_dir, folder, 'snippets', fn)
-                _snips = parse_vs_snippets_file(fp, lexs)
-                for lx in lexs:
-                    snips.setdefault(lx, []).extend(_snips)
+    for folder, cfg in load_vs_snip_exts(vs_dir):
+        files = cfg.get('files', {})
+        for fn, lexs in files.items():
+            fp = os.path.join(vs_dir, folder, 'snippets', fn)
+            _snips = parse_vs_snippets_file(fp, lexs)
+            for lx in lexs:
+                snips.setdefault(lx, []).extend(_snips)
 
     for lx in snips:
         snips[lx].sort()
