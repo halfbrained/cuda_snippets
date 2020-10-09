@@ -1,11 +1,11 @@
 
-2020.10.02
+2020.10.09
 Big rework by @OlehL:
-+ new command "Install VSCode snippets..." - to install snippets from VS Code Marketplace
-+ new command "Delete snippet markers" - clears all markers in the current editor tab
-+ reworked snippets engine to support VS Code snippets
++ new command "Install VSCode snippets..." - to install snippets from VSCode Marketplace
++ reworked snippets engine to support VSCode snippets, ie engine supports VSCode macros
 + now you can insert snippet in another snippet
 + improved work with placeholders ${}, now placeholders can be nested
++ command "Delete snippet markers" (clear all markers in the current document) added to menu Plugins/Snippets and to the editor context menu
 
 2020.07.16
 - fix: handle snippet-file utf-8 read errors
