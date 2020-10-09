@@ -247,6 +247,8 @@ class DlgSearch:
         self.vs_exts = vs_exts
         self.vs_exts.sort(key=lambda i: i['stat'], reverse=True)
         self.exts = self.vs_exts.copy()
+        self.last_text = None
+        self.search()
 
     def show(self):
         self.data = None

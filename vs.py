@@ -229,4 +229,7 @@ def install_vs_snips(path, vs: Dict):
 
 
 if __name__ == '__main__':
-    print(len(get_all_snip_exts()))
+    allse = get_all_snip_exts()
+    print(len(allse))
+    # print(allse[0])
+    # q = query_all_snips_extensions(page_size=1)

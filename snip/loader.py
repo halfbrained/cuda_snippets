@@ -19,17 +19,29 @@ def mkdir(*args):
 
 
 def parse_vs_snippets_file(fp, lex):
-    """Parser for Visual Studio/Code snippets file."""
+    """Parser for VSCode snippets file."""
     res = []
+
+    def _add(k, v):
+        try:
+            t = v['body']
+            if isinstance(t, str):
+                t = t.splitlines()
+            res.append(Snippet(name=k, id=v['prefix'], text=t, lex=lex, t=VS_SNIPPET))
+        except Exception:
+            pass
+
     with open(fp, mode='r', encoding='utf-8') as f:
-        for k, v in load_json(f).items():
-            try:
-                t = v['body']
-                if isinstance(t, str):
-                    t = t.splitlines()
-                res.append(Snippet(name=k, id=v['prefix'], text=t, lex=lex, t=VS_SNIPPET))
-            except Exception:
+        data = load_json(f)
+        for k, v in data.items():
+            if not isinstance(v, dict):
                 continue
+            if ('prefix' in v) and ('body' in v):
+                _add(k, v)
+            else:
+                for kk, vv in v.items():
+                    _add(kk, vv)
+
     return res
 
 
