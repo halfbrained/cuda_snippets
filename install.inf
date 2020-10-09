@@ -12,5 +12,25 @@ keys=9
 
 [item2]
 section=commands
-caption=Snippets
+caption=Snippets\Snippets menu...
 method=do_menu
+
+[item3]
+section=commands
+caption=Snippets\Delete snippet markers
+method=del_markers
+
+[item5]
+section=commands
+caption=Snippets\Install VSCode snippets...
+method=install_vs_snip
+
+[item8]
+section=commands
+caption=Addons Manager\-
+method=_
+
+[item9]
+section=commands
+caption=Addons Manager\Install VSCode snippets...
+method=install_vs_snip
