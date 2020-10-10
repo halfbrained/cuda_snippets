@@ -388,7 +388,7 @@ class Snippet:
                         return None, None, None
                     p = buf.pop()
                     x = t.start(0)
-                    ln_x = x - p.x1 if y - p.y == 0 else x + shift
+                    ln_x = (x + shift) - (p.x0 + p.shift) if y - p.y == 0 else x + shift
                     m = marker(
                         x=p.x0+p.shift+(x0 if y == 0 else 0),
                         y=p.y+y0,
@@ -396,7 +396,7 @@ class Snippet:
                         len_x=ln_x,
                         len_y=y-p.y
                     )
-                    # dev(m)
+                    # dev(m, p.shift, shift, buf)
                     if p.tag == 0:
                         zero_markers.append(m)
                     else:

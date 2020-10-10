@@ -166,6 +166,11 @@ def prepare_vs_snips(f):
                 'version': js.get('version'),
                 'display_name': js.get('displayName'),
                 'description': js.get('description'),
+                'links': {
+                    'bugs': js.get('bugs', {}).get('url', ''),
+                    'repository': js.get('repository', {}).get('url', ''),
+                    'homepage': js.get('homepage', ''),
+                },
             }
             contributes = js.get('contributes')
             if not contributes:
