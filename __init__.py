@@ -107,12 +107,11 @@ class Command:
                      tag='cuda_snippets'
                      )
 
-    def issues_vs(self):
+    def vs_local_dirs(self):
 
         dir = os.path.join(ct.app_path(ct.APP_DIR_DATA), 'snippets_vs')
         if not os.path.isdir(dir):
-            ct.msg_status('No VSCode snippets found')
-            return
+            return []
 
         rec = []
         obj = os.scandir(dir)
@@ -131,18 +130,43 @@ class Command:
                                 if url.endswith('.git'):
                                     url = s[:-4]
                         if name and url:
-                            rec += [(name, url)]
+                            rec += [(name, url, item.path)]
 
+        rec = sorted(rec, key=lambda r: r[0])
+        return rec
+
+
+    def issues_vs(self):
+
+        rec = self.vs_local_dirs()
         if not rec:
             ct.msg_status('No VSCode snippets found')
             return
 
-        rec = sorted(rec, key=lambda r: r[0])
         mnu = [s[0] for s in rec]
-        res = ct.dlg_menu(ct.MENU_LIST, mnu, caption='Snippets packages')
+        res = ct.dlg_menu(ct.MENU_LIST, mnu, caption='Visit page of snippets')
         if res is None:
             return
 
         url = rec[res][1]
         webbrowser.open_new_tab(url)
         ct.msg_status('URL opened: '+url)
+
+
+    def remove_vs_snip(self):
+
+        rec = self.vs_local_dirs()
+        if not rec:
+            ct.msg_status('No VSCode snippets found')
+            return
+
+        mnu = [s[0] for s in rec]
+        res = ct.dlg_menu(ct.MENU_LIST, mnu, caption='Delete snippets')
+        if res is None:
+            return
+
+        dir = rec[res][2]
+        import shutil
+        shutil.rmtree(dir)
+        ct.msg_status('Removed snippets; restart CudaText to forget about this package')
+     
