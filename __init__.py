@@ -1,6 +1,5 @@
 import os
 import json
-import webbrowser
 import cudatext as ct
 from cuda_snippets.dlg_lexers_compare import DlgLexersCompare
 from cuda_snippets.dlg_search import DlgSearch
@@ -149,8 +148,9 @@ class Command:
             return
 
         url = rec[res][1]
+        import webbrowser
         webbrowser.open_new_tab(url)
-        ct.msg_status('URL opened: '+url)
+        ct.msg_status('Opened: '+url)
 
 
     def remove_vs_snip(self):
