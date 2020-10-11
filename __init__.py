@@ -111,7 +111,7 @@ class Command:
 
         dir = os.path.join(ct.app_path(ct.APP_DIR_DATA), 'snippets_vs')
         if not os.path.isdir(dir):
-            ct.msg_status('No VSCode snippets are installed')
+            ct.msg_status('No VSCode snippets found')
             return
 
         rec = []
@@ -134,9 +134,10 @@ class Command:
                             rec += [(name, url)]
 
         if not rec:
-            ct.msg_status('No VSCode snippets with info')
+            ct.msg_status('No VSCode snippets found')
             return
 
+        rec = sorted(rec, key=lambda r: r[0])
         mnu = [s[0] for s in rec]
         res = ct.dlg_menu(ct.MENU_LIST, mnu, caption='Snippets packages')
         if res is None:
