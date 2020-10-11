@@ -1,3 +1,6 @@
+import os
+import json
+import webbrowser
 import cudatext as ct
 from cuda_snippets.dlg_lexers_compare import DlgLexersCompare
 from cuda_snippets.dlg_search import DlgSearch
@@ -103,3 +106,42 @@ class Command:
                      # hotkey=hotkey,
                      tag='cuda_snippets'
                      )
+
+    def issues_vs(self):
+
+        dir = os.path.join(ct.app_path(ct.APP_DIR_DATA), 'snippets_vs')
+        if not os.path.isdir(dir):
+            ct.msg_status('No VSCode snippets are installed')
+            return
+
+        rec = []
+        obj = os.scandir(dir)
+        for item in obj:
+            if item.is_dir():
+                fn = os.path.join(item.path, 'config.json')
+                if os.path.isfile(fn):
+                    with open(fn, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                        name = data.get('display_name', '')
+                        data = data.get('links', '')
+                        if data:
+                            url = data.get('bugs', '')
+                            if not url:
+                                url = data.get('repository', '')
+                                if url.endswith('.git'):
+                                    url = s[:-4]
+                        if name and url:
+                            rec += [(name, url)]
+
+        if not rec:
+            ct.msg_status('No VSCode snippets with info')
+            return
+
+        mnu = [s[0] for s in rec]
+        res = ct.dlg_menu(ct.MENU_LIST, mnu, caption='Snippets packages')
+        if res is None:
+            return
+
+        url = rec[res][1]
+        webbrowser.open_new_tab(url)
+        ct.msg_status('URL opened: '+url)
