@@ -32,6 +32,11 @@ method=install_vs_snip
 
 [item12]
 section=commands
+caption=Snippets\Remove VSCode snippets...
+method=remove_vs_snip
+
+[item13]
+section=commands
 caption=Snippets\Visit homepage of VSCode snippets...
 method=issues_vs
 
@@ -44,3 +49,13 @@ method=_
 section=commands
 caption=Addons Manager\Install VSCode snippets...
 method=install_vs_snip
+
+[item22]
+section=commands
+caption=Addons Manager\Remove VSCode snippets...
+method=remove_vs_snip
+
+[item23]
+section=commands
+caption=Addons Manager\Visit homepage of VSCode snippets...
+method=issues_vs
