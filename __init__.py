@@ -121,13 +121,13 @@ class Command:
                     with open(fn, 'r', encoding='utf-8') as f:
                         data = json.load(f)
                         name = data.get('display_name', '')
-                        data = data.get('links', '')
-                        if data:
-                            url = data.get('bugs', '')
+                        lnk = data.get('links', '')
+                        if lnk:
+                            url = lnk.get('bugs', '')
                             if not url:
-                                url = data.get('repository', '')
+                                url = lnk.get('repository', '')
                                 if url.endswith('.git'):
-                                    url = s[:-4]
+                                    url = url[:-4]
                         if name and url:
                             rec += [{'name': name, 'url': url, 'dir': item.path}]
 
