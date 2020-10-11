@@ -129,9 +129,9 @@ class Command:
                                 if url.endswith('.git'):
                                     url = s[:-4]
                         if name and url:
-                            rec += [(name, url, item.path)]
+                            rec += [{'name': name, 'url': url, 'dir': item.path}]
 
-        rec = sorted(rec, key=lambda r: r[0])
+        rec = sorted(rec, key=lambda r: r['name'])
         return rec
 
 
@@ -142,12 +142,12 @@ class Command:
             ct.msg_status('No VSCode snippets found')
             return
 
-        mnu = [s[0] for s in rec]
+        mnu = [s['name'] for s in rec]
         res = ct.dlg_menu(ct.MENU_LIST, mnu, caption='Visit page of snippets')
         if res is None:
             return
 
-        url = rec[res][1]
+        url = rec[res]['url']
         import webbrowser
         webbrowser.open_new_tab(url)
         ct.msg_status('Opened: '+url)
@@ -160,13 +160,12 @@ class Command:
             ct.msg_status('No VSCode snippets found')
             return
 
-        mnu = [s[0] for s in rec]
+        mnu = [s['name'] for s in rec]
         res = ct.dlg_menu(ct.MENU_LIST, mnu, caption='Remove snippets')
         if res is None:
             return
 
-        dir = rec[res][2]
+        dir = rec[res]['dir']
         import shutil
         shutil.rmtree(dir)
         ct.msg_status('Snippets folder removed; restart CudaText to forget about it')
- 
