@@ -161,12 +161,12 @@ class Command:
             return
 
         mnu = [s[0] for s in rec]
-        res = ct.dlg_menu(ct.MENU_LIST, mnu, caption='Delete snippets')
+        res = ct.dlg_menu(ct.MENU_LIST, mnu, caption='Remove snippets')
         if res is None:
             return
 
         dir = rec[res][2]
         import shutil
         shutil.rmtree(dir)
-        ct.msg_status('Removed snippets; restart CudaText to forget about this package')
-     
+        ct.msg_status('Snippets folder removed; restart CudaText to forget about it')
+ 
