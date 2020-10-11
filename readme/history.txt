@@ -1,4 +1,8 @@
 
+2020.10.12
++ add: command "Visit homepage of VSCode snippets"
+- fixes for VSCode snippets installer
+
 2020.10.09
 Big rework by @OlehL:
 + new command "Install VSCode snippets..." - to install snippets from VSCode Marketplace
