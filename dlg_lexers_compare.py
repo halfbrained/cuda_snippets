@@ -1,4 +1,4 @@
-﻿import os
+import os
 
 import cudatext as ct
 from cuda_snippets import vs
@@ -111,6 +111,12 @@ class DlgLexersCompare:
                         if x not in lx:
                             lx.append(x)
                     new[lexer] = lx
+
+        if not new:
+            ct.msg_box('You must check at least one CudaText lexer, for snippets to work', 
+                ct.MB_OK+ct.MB_ICONWARNING)
+            return
+
         self.data['files'] = new
         # install
         path = os.path.join(ct.app_path(ct.APP_DIR_DATA), 'snippets_vs')
