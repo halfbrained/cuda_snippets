@@ -1,3 +1,5 @@
+import os
+import json
 import cudatext as ct
 from cuda_snippets.dlg_lexers_compare import DlgLexersCompare
 from cuda_snippets.dlg_search import DlgSearch
@@ -103,3 +105,67 @@ class Command:
                      # hotkey=hotkey,
                      tag='cuda_snippets'
                      )
+
+    def vs_local_dirs(self):
+
+        dir = os.path.join(ct.app_path(ct.APP_DIR_DATA), 'snippets_vs')
+        if not os.path.isdir(dir):
+            return []
+
+        rec = []
+        obj = os.scandir(dir)
+        for item in obj:
+            if item.is_dir():
+                fn = os.path.join(item.path, 'config.json')
+                if os.path.isfile(fn):
+                    with open(fn, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                        name = data.get('display_name', '')
+                        lnk = data.get('links', '')
+                        if lnk:
+                            url = lnk.get('bugs', '')
+                            if not url:
+                                url = lnk.get('repository', '')
+                                if url.endswith('.git'):
+                                    url = url[:-4]
+                        if name and url:
+                            rec += [{'name': name, 'url': url, 'dir': item.path}]
+
+        rec = sorted(rec, key=lambda r: r['name'])
+        return rec
+
+
+    def issues_vs(self):
+
+        rec = self.vs_local_dirs()
+        if not rec:
+            ct.msg_status('No VSCode snippets found')
+            return
+
+        mnu = [s['name'] for s in rec]
+        res = ct.dlg_menu(ct.MENU_LIST, mnu, caption='Visit page of snippets')
+        if res is None:
+            return
+
+        url = rec[res]['url']
+        import webbrowser
+        webbrowser.open_new_tab(url)
+        ct.msg_status('Opened: '+url)
+
+
+    def remove_vs_snip(self):
+
+        rec = self.vs_local_dirs()
+        if not rec:
+            ct.msg_status('No VSCode snippets found')
+            return
+
+        mnu = [s['name'] for s in rec]
+        res = ct.dlg_menu(ct.MENU_LIST, mnu, caption='Remove snippets')
+        if res is None:
+            return
+
+        dir = rec[res]['dir']
+        import shutil
+        shutil.rmtree(dir)
+        ct.msg_status('Snippets folder removed; restart CudaText to forget about it')

@@ -1,4 +1,4 @@
-﻿import zipfile
+import zipfile
 from collections import namedtuple
 import os
 import shutil
@@ -7,6 +7,7 @@ import requests
 import tempfile
 import threading as th
 from typing import Dict
+import cudatext as ct
 
 # from cuda_dev import dev
 
@@ -152,6 +153,13 @@ def get_all_snip_exts():
     return result
 
 
+def get_2keys(data, k1, k2):
+    d = data.get(k1, {})
+    if isinstance(d, dict):
+        return d.get(k2, '')
+    else:
+        return ''
+
 def prepare_vs_snips(f):
     if not zipfile.is_zipfile(f):
         print('It is not a zip file')
@@ -167,8 +175,8 @@ def prepare_vs_snips(f):
                 'display_name': js.get('displayName'),
                 'description': js.get('description'),
                 'links': {
-                    'bugs': js.get('bugs', {}).get('url', ''),
-                    'repository': js.get('repository', {}).get('url', ''),
+                    'bugs': get_2keys(js, 'bugs', 'url'),
+                    'repository': get_2keys(js, 'repository', 'url'),
                     'homepage': js.get('homepage', ''),
                 },
             }
@@ -178,7 +186,8 @@ def prepare_vs_snips(f):
             files = {}
             snips = contributes.get('snippets')
             if not snips:
-                print("Sorry, but this package doesn't have any snippets.")
+                ct.msg_box("Sorry, but this package doesn't have any snippets",
+                    ct.MB_OK+ct.MB_ICONERROR)
                 return
             for sn in snips:
                 lang = sn['language']
