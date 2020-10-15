@@ -1,10 +1,15 @@
 import os
-import json
+import shutil
+import webbrowser
+
 import cudatext as ct
 from cuda_snippets.dlg_lexers_compare import DlgLexersCompare
 from cuda_snippets.dlg_search import DlgSearch
-from cuda_snippets.snip import load_snippets, get_word
+from cuda_snippets import snip as sn
 from cuda_snippets import vs
+
+
+DATA_DIR = ct.app_path(ct.APP_DIR_DATA)
 
 
 class Command:
@@ -12,12 +17,8 @@ class Command:
         self.vs_exts = None
         self.dlg_search = DlgSearch()
         self.last_snippet = None
-        self.do_load_snippets()
+        self.snippets, self.glob = sn.load_snippets(DATA_DIR)
         self.add_menu_items()
-
-    def do_load_snippets(self):
-        base_dir = ct.app_path(ct.APP_DIR_DATA)
-        self.snippets, self.glob = load_snippets(base_dir)
 
     @property
     def lex_snippets(self):
@@ -30,7 +31,7 @@ class Command:
         if state != '':
             return  # pressed any meta keys
 
-        name = get_word(ed_self)
+        name = sn.get_word(ed_self)
         if not name:
             return
 
@@ -85,7 +86,7 @@ class Command:
         if not data:
             return
         DlgLexersCompare(data).show()
-        self.do_load_snippets()
+        self.snippets, self.glob = sn.load_snippets(DATA_DIR)
 
     @staticmethod
     def del_markers():
@@ -106,55 +107,48 @@ class Command:
                      tag='cuda_snippets'
                      )
 
-    def vs_local_dirs(self):
-
-        dir = os.path.join(ct.app_path(ct.APP_DIR_DATA), 'snippets_vs')
-        if not os.path.isdir(dir):
+    @staticmethod
+    def vs_local_dirs():
+        vs_dir = os.path.join(DATA_DIR, 'snippets_vs')
+        if not os.path.isdir(vs_dir):
             return []
 
         rec = []
-        obj = os.scandir(dir)
-        for item in obj:
-            if item.is_dir():
-                fn = os.path.join(item.path, 'config.json')
-                if os.path.isfile(fn):
-                    with open(fn, 'r', encoding='utf-8') as f:
-                        data = json.load(f)
-                        name = data.get('display_name', '')
-                        url = ''
-                        lnk = data.get('links', '')
-                        if lnk:
-                            url = lnk.get('bugs', '') or lnk.get('repository', '')
-                            if url.endswith('.git'):
-                                url = url[:-4]
-                        if name and url:
-                            rec += [{'name': name, 'url': url, 'dir': item.path}]
+        for folder, data in sn.load_vs_snip_exts(vs_dir):
+            name = data.get('display_name', '') + ' ' + data.get('version', '')
+            url = ''
+            lnk = data.get('links', '')
+            if lnk:
+                url = lnk.get('bugs', '') or lnk.get('repository', '')
+                if url.endswith('.git'):
+                    url = url[:-4]
+            if name:
+                rec += [{'name': name, 'url': url, 'dir': folder.path}]
 
-        rec = sorted(rec, key=lambda r: r['name'])
+        rec.sort(key=lambda r: r['name'])
         return rec
 
-
     def issues_vs(self):
-
         rec = self.vs_local_dirs()
         if not rec:
             ct.msg_status('No VSCode snippets found')
             return
 
-        mnu = [s['name'] for s in rec]
-        res = ct.dlg_menu(ct.MENU_LIST, mnu, caption='Visit page of snippets')
+        mnu = [s['name']+'\t'+s['url'] for s in rec]
+        res = ct.dlg_menu(ct.MENU_LIST_ALT, mnu, caption='Visit page of snippets')
         if res is None:
             return
 
         url = rec[res]['url']
-        import webbrowser
-        webbrowser.open_new_tab(url)
+        if not url:
+            ct.msg_status("No URL found")
+            return
         ct.msg_status('Opened: '+url)
-
+        webbrowser.open_new_tab(url)
 
     def remove_vs_snip(self):
-
         rec = self.vs_local_dirs()
+
         if not rec:
             ct.msg_status('No VSCode snippets found')
             return
@@ -164,7 +158,6 @@ class Command:
         if res is None:
             return
 
-        dir = rec[res]['dir']
-        import shutil
-        shutil.rmtree(dir)
+        vs_snip_dir = rec[res]['dir']
+        shutil.rmtree(vs_snip_dir)
         ct.msg_status('Snippets folder removed; restart CudaText to forget about it')

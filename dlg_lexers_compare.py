@@ -4,9 +4,6 @@ import cudatext as ct
 from cuda_snippets import vs
 
 
-# from cuda_dev import dev
-
-
 class DlgLexersCompare:
     def __init__(self, data=None):
         self.data = data
@@ -106,15 +103,15 @@ class DlgLexersCompare:
             for n, i in enumerate(v.split(';')[1].split(',')):
                 if i == '1':
                     lexer = self.lexers[n]
-                    lx: list = new.get(lexer, [])
+                    lx = new.get(lexer, [])
                     for x in files[k]:
                         if x not in lx:
                             lx.append(x)
                     new[lexer] = lx
 
         if not new:
-            ct.msg_box('You must check at least one CudaText lexer, for snippets to work', 
-                ct.MB_OK+ct.MB_ICONWARNING)
+            ct.msg_box('You must check at least one CudaText lexer, for snippets to work',
+                       ct.MB_OK+ct.MB_ICONWARNING)
             return
 
         self.data['files'] = new
@@ -129,7 +126,7 @@ class DlgLexersCompare:
 
 
 if __name__ == '__main__':
-    data = {
+    _data = {
         'name': 'js-jsx-snippets',
         'version': '10.1.0',
         'display_name': 'JS JSX Snippets',
@@ -141,4 +138,4 @@ if __name__ == '__main__':
             'typescriptreact': ['extension/snippets/snippets.json']
         }
     }
-    DlgLexersCompare(data).show()
+    DlgLexersCompare(_data).show()

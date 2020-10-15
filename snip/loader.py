@@ -3,10 +3,9 @@ import os
 import re
 
 from cuda_snippets.snip.utils import load_json
+from cuda_snippets.snip.snippet import Snippet, CT_SNIPPET, VS_SNIPPET
 
-from .snippet import Snippet, CT_SNIPPET, VS_SNIPPET
 # from cuda_dev import dev
-
 
 SNIP_EXTENSION = '.synw-snippet'
 SNIP_EXTENSION2 = '.cuda-snippet'
@@ -146,14 +145,11 @@ def load_vs_snip_exts(vs_dir):
 
 
 def load_snippets(basedir):
-    vs_dir = os.path.join(basedir, 'snippets_vs')
-    std_dir = os.path.join(basedir, 'snippets')
-    mkdir(vs_dir)
-    mkdir(std_dir)
-
     snips = {}
     glob = []  # ???? maybe not need global snippets
     # load std snips
+    std_dir = os.path.join(basedir, 'snippets')
+    mkdir(std_dir)
     for root, subdirs, files in os.walk(std_dir):
         for f in files:
             fp = os.path.join(root, f)
@@ -173,10 +169,12 @@ def load_snippets(basedir):
                         glob.append(res)
 
     # load vs snips
+    vs_dir = os.path.join(basedir, 'snippets_vs')
+    mkdir(vs_dir)
     for folder, cfg in load_vs_snip_exts(vs_dir):
         files = cfg.get('files', {})
         for fn, lexs in files.items():
-            fp = os.path.join(vs_dir, folder, 'snippets', fn)
+            fp = os.path.join(folder.path, 'snippets', fn)
             _snips = parse_vs_snippets_file(fp, lexs)
             for lx in lexs:
                 snips.setdefault(lx, []).extend(_snips)

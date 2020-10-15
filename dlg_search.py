@@ -1,11 +1,9 @@
-﻿import threading
-import re
+﻿import re
 import os
 
 import cudatext as ct
 from cuda_snippets import vs
 
-# from cuda_dev import dev
 
 PLUG = "snippets"
 
@@ -91,7 +89,6 @@ class DlgSearch:
         self.cfg = Ini(os.path.join(ct.app_path(ct.APP_DIR_SETTINGS), "plugins.ini"))
 
         w, h = 600, 400
-        GUI_HEIGHT = ct.app_proc(ct.PROC_GET_GUI_HEIGHT, '')
         self.h = ct.dlg_proc(0, ct.DLG_CREATE)
         ct.dlg_proc(self.h, ct.DLG_PROP_SET,
                     prop={'cap': 'Search snippets',
@@ -274,7 +271,6 @@ class DlgSearch:
         return self.data
 
     def press_key(self, id_dlg, id_ctl, data='', info=''):
-        # dev(id_ctl)
         if id_ctl == 13:
             if self.is_focused(self.edit):
                 self.search()
@@ -322,7 +318,6 @@ class DlgSearch:
 
         self.data = vs.download(ext['url'])
         if not self.data:
-            ct.msg_box(' '.join(["Can't download: ", ext['display_name'], ext['version']]), ct.MB_OK+ct.MB_ICONERROR)
             return
 
     def search(self, *args, **kwargs):

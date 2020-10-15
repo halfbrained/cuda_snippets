@@ -13,7 +13,6 @@ CT_SNIPPET = 0
 VS_SNIPPET = 1
 TABSTOP = 0
 PLACEHOLDER = 1
-RE_TOKEN_PART = re.compile(r"(?<!\\)\$\d+|\${\d+:|\${|}")
 RE_DATE = re.compile(r'\${date:(.*?)}')
 RE_ENV = re.compile(r'\${env:(.*?)}')
 
@@ -191,7 +190,6 @@ class Snippet:
         # parse Tabstops and Placeholders
         _mrks = ed.markers(ct.MARKERS_GET) or {}
         basetag = max([i[-1] for i in _mrks]) if _mrks else 0
-        # s_text, zero_markers, markers = self.parse_tabstops_vs(sn, x0, y0, basetag=basetag)
         s_text, zero_markers, markers = self.parse_tabstops(sn, x0, y0, basetag=basetag)
         if not s_text:
             print('Wrong snippet: {}'.format(self.name))
@@ -418,11 +416,44 @@ class Snippet:
         return sn, zero_markers, markers
 
 
-if __name__ == '__main__':
-    ts = VariableState(ct.ed)
-    print(vars(ts))
-    _sn = [
-        "${date:%Y}",
-        "${env:PATH}"
-    ]
-    print(Snippet().parse_vars_ct(ts, _sn))
+# if __name__ == '__main__':
+    # ts = VariableState(ct.ed)
+    # print(vars(ts))
+    # _sn = [
+    #     "${date:%Y}",
+    #     "${env:PATH}"
+    # ]
+    # print(Snippet().parse_vars_ct(ts, _sn))
+
+    # _t = [
+    #     "--- Class for ${1:description}",
+    #     "",
+    #     "-- @var class var for this lib",
+    #     "local ${TM_FILENAME_BASE/[^a-z]*([a-z]+)/${1:/capitalize}/g} = {}",
+    #     "",
+    #     "--- Create a new instance",
+    #     "-- @param vararg",
+    #     "-- @return self",
+    #     "function ${TM_FILENAME_BASE/[^a-z]*([a-z]+)/${1:/capitalize}/g}.create( ... )",
+    #     "\tlocal self = setmetatable( {}, ${TM_FILENAME_BASE/[^a-z]*([a-z]+)/${1:/capitalize}/g} )",
+    #     "\tself:_init( ... )",
+    #     "\treturn self",
+    #     "end",
+    #     "",
+    #     "--- Initialize a new instance",
+    #     "-- @private",
+    #     "-- @param vararg",
+    #     "-- @return self",
+    #     "function ${TM_FILENAME_BASE/[^a-z]*([a-z]+)/${1:/capitalize}/g}:_init( ... ) -- luacheck: no unused args",
+    #     "\tlocal t = { ... }",
+    #     "\t--@todo must probably be completed",
+    #     "\treturn self",
+    #     "end",
+    #     "",
+    #     "$0",
+    #     "",
+    #     "-- Return the final class",
+    #     "return ${TM_FILENAME_BASE/[^a-z]*([a-z]+)/${1:/capitalize}/g}"
+    # ]
+    # _sn = Snippet(name='1', id='1', lex='lua', text=_t, t=VS_SNIPPET)
+    # print(_sn.insert(ct.ed))
