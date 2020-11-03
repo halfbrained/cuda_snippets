@@ -349,11 +349,16 @@ class Snippet:
 
     @staticmethod
     def parse_tabstops(sn, x0, y0, basetag):
+
+        def get_new_ln(new_ln, shift, t):
+            return new_ln[:shift+t.start(0)] + new_ln[shift+t.end(0):]
+
         zero_markers = []
         markers = []
 
         buf = []
         for y, ln in enumerate(sn):
+            new_ln: str = ln
             shift = 0
             for t in RE_TOKEN_PART.finditer(ln):
 
@@ -368,6 +373,7 @@ class Snippet:
                         zero_markers.append(m)
                     else:
                         markers.append(m)
+                    new_ln = get_new_ln(new_ln, shift, t)
                     shift -= len(t[0])
 
                 elif is_placeholder_head(t[0]):
@@ -378,12 +384,13 @@ class Snippet:
                         shift=shift,
                         tag=int(t[2])
                     )
+                    new_ln = get_new_ln(new_ln, shift, t)
                     buf.append(p)
                     shift -= t.end(0) - t.start(0)
 
                 elif is_placeholder_tail(t[0]):
                     if not buf:
-                        return None, None, None
+                        continue
                     p = buf.pop()
                     x = t.start(0)
                     ln_x = (x + shift) - (p.x0 + p.shift) if y - p.y == 0 else x + shift
@@ -394,6 +401,7 @@ class Snippet:
                         len_x=ln_x,
                         len_y=y-p.y
                     )
+                    new_ln = get_new_ln(new_ln, shift, t)
                     # dev(m, p.shift, shift, buf)
                     if p.tag == 0:
                         zero_markers.append(m)
@@ -402,7 +410,7 @@ class Snippet:
                     shift -= 1
 
             # cln text line
-            sn[y] = RE_TOKEN_PART.sub('', ln)
+            sn[y] = new_ln
 
         # convert zero markers to maximum markers if already has markers in editor
         if basetag != 0 and markers:
