@@ -11,11 +11,15 @@ events=on_key+
 keys=9
 
 [item2]
+section=events
+events=on_start
+
+[item3]
 section=commands
 caption=Snippets\Snippets menu...
 method=do_menu
 
-[item3]
+[item4]
 section=commands
 caption=Snippets\Delete snippet markers
 method=del_markers

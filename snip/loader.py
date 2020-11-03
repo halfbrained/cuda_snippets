@@ -185,6 +185,3 @@ def load_snippets(basedir):
 
     return snips, glob
 
-
-if __name__ == '__main__':
-    pass

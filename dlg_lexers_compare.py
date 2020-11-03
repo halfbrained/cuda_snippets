@@ -125,17 +125,17 @@ class DlgLexersCompare:
         ct.dlg_proc(self.h, ct.DLG_FREE)
 
 
-if __name__ == '__main__':
-    _data = {
-        'name': 'js-jsx-snippets',
-        'version': '10.1.0',
-        'display_name': 'JS JSX Snippets',
-        'description': 'Simple extensions for React, Redux in JS with babel and ES6 syntax',
-        'files': {
-            'javascript': ['extension/snippets/snippets.json'],
-            'javascriptreact': ['extension/snippets/snippets.json'],
-            'typescript': ['extension/snippets/snippets.json'],
-            'typescriptreact': ['extension/snippets/snippets.json']
-        }
-    }
-    DlgLexersCompare(_data).show()
+# if __name__ == '__main__':
+#     _data = {
+#         'name': 'js-jsx-snippets',
+#         'version': '10.1.0',
+#         'display_name': 'JS JSX Snippets',
+#         'description': 'Simple extensions for React, Redux in JS with babel and ES6 syntax',
+#         'files': {
+#             'javascript': ['extension/snippets/snippets.json'],
+#             'javascriptreact': ['extension/snippets/snippets.json'],
+#             'typescript': ['extension/snippets/snippets.json'],
+#             'typescriptreact': ['extension/snippets/snippets.json']
+#         }
+#     }
+#     DlgLexersCompare(_data).show()

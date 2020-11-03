@@ -1,29 +1,42 @@
+# from cuda_dev import dev
 import os
 import shutil
 import webbrowser
+from threading import Thread
 
 import cudatext as ct
-from cuda_snippets.dlg_lexers_compare import DlgLexersCompare
-from cuda_snippets.dlg_search import DlgSearch
+# dev.tstart()
 from cuda_snippets import snip as sn
-from cuda_snippets import vs
-
+# dev.tstop()
 
 DATA_DIR = ct.app_path(ct.APP_DIR_DATA)
+
+
+class ThSnippetsLoader(Thread):
+    def __init__(self):
+        super().__init__()
+        self.snippets = {}
+        self.glob = {}
+
+    def run(self):
+        self.snippets, self.glob = sn.load_snippets(DATA_DIR)
 
 
 class Command:
     def __init__(self):
         self.vs_exts = None
-        self.dlg_search = DlgSearch()
+        self.dlg_search = None
         self.last_snippet = None
-        self.snippets, self.glob = sn.load_snippets(DATA_DIR)
         self.add_menu_items()
+
+    def on_start(self, ed_self):
+        self.th = ThSnippetsLoader()
+        self.th.start()
 
     @property
     def lex_snippets(self):
         lexer = ct.ed.get_prop(ct.PROP_LEXER_CARET)
-        return self.snippets.get(lexer, []) + self.glob
+        return self.th.snippets.get(lexer, []) + self.th.glob
 
     def on_key(self, ed_self, code, state):
         if code != 9:
@@ -73,6 +86,14 @@ class Command:
         self.menu_dlg(self.lex_snippets)
 
     def install_vs_snip(self):
+        # need import here, not at the top, for faster load cudatext
+        from cuda_snippets import vs
+        from cuda_snippets.dlg_search import DlgSearch
+        from cuda_snippets.dlg_lexers_compare import DlgLexersCompare
+
+        if not self.dlg_search:
+            self.dlg_search = DlgSearch()
+
         # load vs snippets list
         if not self.vs_exts:
             ct.msg_status("Loading VS Snippets list. Please wait...", process_messages=True)
@@ -86,7 +107,7 @@ class Command:
         if not data:
             return
         DlgLexersCompare(data).show()
-        self.snippets, self.glob = sn.load_snippets(DATA_DIR)
+        self.on_start(0)
 
     @staticmethod
     def del_markers():

@@ -10,7 +10,6 @@ from typing import Dict
 import cudatext as ct
 
 
-lock_exts = th.Lock()
 TEMPDIR = os.path.join(tempfile.gettempdir(), 'cudatext')
 TEMPFILE = os.path.join(TEMPDIR, 'sn.vsix')
 URL = "https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery"
@@ -125,6 +124,7 @@ def query_all_snips_extensions(page_size=50, page_number=1):
 
 
 def get_all_snip_exts():
+    lock_exts = th.Lock()
     result = []
 
     def get_res(page_number):
