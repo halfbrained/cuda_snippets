@@ -16,7 +16,7 @@ class ThSnippetsLoader(Thread):
     def __init__(self):
         super().__init__()
         self.snippets = {}
-        self.glob = {}
+        self.glob = []
 
     def run(self):
         self.snippets, self.glob = sn.load_snippets(DATA_DIR)
