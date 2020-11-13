@@ -1,42 +1,34 @@
 # from cuda_dev import dev
+# dev.tstart()
 import os
 import shutil
 import webbrowser
-from threading import Thread
 
 import cudatext as ct
-# dev.tstart()
 from cuda_snippets import snip as sn
 # dev.tstop()
 
 DATA_DIR = ct.app_path(ct.APP_DIR_DATA)
 
 
-class ThSnippetsLoader(Thread):
-    def __init__(self):
-        super().__init__()
-        self.snippets = {}
-        self.glob = []
-
-    def run(self):
-        self.snippets, self.glob = sn.load_snippets(DATA_DIR)
-
-
 class Command:
     def __init__(self):
+        # dev.tstart()
         self.vs_exts = None
         self.dlg_search = None
         self.last_snippet = None
+        self.loader = sn.Loader(DATA_DIR)
         self.add_menu_items()
+        # dev.tstop()
 
-    def on_start(self, ed_self):
-        self.th = ThSnippetsLoader()
-        self.th.start()
+    @property
+    def lexer(self):
+        return ct.ed.get_prop(ct.PROP_LEXER_CARET)
 
     @property
     def lex_snippets(self):
-        lexer = ct.ed.get_prop(ct.PROP_LEXER_CARET)
-        return self.th.snippets.get(lexer, []) + self.th.glob
+        return self.loader.load_by_lexer(self.lexer)
+        # return self.snippets.get(lexer, []) + self.glob
 
     def on_key(self, ed_self, code, state):
         if code != 9:
@@ -107,7 +99,8 @@ class Command:
         if not data:
             return
         DlgLexersCompare(data).show()
-        self.on_start(0)
+        self.loader = sn.Loader(DATA_DIR)
+        # self.loader.load_all()
 
     @staticmethod
     def del_markers():
@@ -128,14 +121,16 @@ class Command:
                      tag='cuda_snippets'
                      )
 
-    @staticmethod
-    def vs_local_dirs():
+    def vs_local_dirs(self):
         vs_dir = os.path.join(DATA_DIR, 'snippets_vs')
         if not os.path.isdir(vs_dir):
             return []
 
         rec = []
-        for folder, data in sn.load_vs_snip_exts(vs_dir):
+        # for folder, data in sn.load_vs_snip_exts(vs_dir):
+        for data in self.loader.packages:
+            if data['type'] != 1:
+                continue
             name = data.get('display_name', '') + ' ' + data.get('version', '')
             url = ''
             lnk = data.get('links', '')
@@ -144,7 +139,7 @@ class Command:
                 if url.endswith('.git'):
                     url = url[:-4]
             if name:
-                rec += [{'name': name, 'url': url, 'dir': folder.path}]
+                rec.append({'name': name, 'url': url, 'dir': data['path']})
 
         rec.sort(key=lambda r: r['name'])
         return rec
@@ -182,3 +177,10 @@ class Command:
         vs_snip_dir = rec[res]['dir']
         shutil.rmtree(vs_snip_dir)
         ct.msg_status('Snippets folder removed; restart CudaText to forget about it')
+
+    def convert_from_old_format(self):
+        _data = ct.app_path(ct.APP_DIR_DATA)
+        d = ct.dlg_dir(os.path.join(_data, 'snippets'), caption='Select snippets package')
+        if not d:
+            return
+        sn.convert_old_pkg(d, os.path.join(_data, 'snippets_ct'))

@@ -129,6 +129,13 @@ class Snippet:
         self.text = [text] if isinstance(text, str) else text
         self.type = t
 
+    @property
+    def _name(self):
+        if self.name:
+            return self.name
+        else:
+            return self.id
+
     def __repr__(self):
         lex = ', '.join(self.lex) if isinstance(self.lex, list) else self.lex
         _id = ', '.join(self.id)

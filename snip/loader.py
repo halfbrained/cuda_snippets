@@ -17,7 +17,12 @@ def mkdir(*args):
         os.mkdir(*args)
 
 
-def parse_vs_snippets_file(fp, lex):
+def save_to_json(data, fp, sort_keys=False):
+    with open(fp, 'w', encoding='utf8') as f:
+        json.dump(data, f, indent=4, sort_keys=sort_keys)
+
+
+def parse_vs_snippets_file(fp, lex, sn_type=VS_SNIPPET):
     """Parser for VSCode snippets file."""
     res = []
 
@@ -26,7 +31,7 @@ def parse_vs_snippets_file(fp, lex):
             t = v['body']
             if isinstance(t, str):
                 t = t.splitlines()
-            res.append(Snippet(name=k, id=v['prefix'], text=t, lex=lex, t=VS_SNIPPET))
+            res.append(Snippet(name=k, id=v['prefix'], text=t, lex=lex, t=sn_type))
         except Exception:
             pass
 
@@ -134,54 +139,114 @@ def parse_simple_snippet_line(fp):
     return res
 
 
-def load_vs_snip_exts(vs_dir):
-    for folder in os.scandir(vs_dir):
-        config = os.path.join(vs_dir, folder, 'config.json')
-        if not os.path.exists(config):
-            continue
+class Loader():
+    def __init__(self, basedir):
+        self.packages = []
+        self.snippets = {}
 
-        with open(config, 'r', encoding='utf-8') as _cfg:
-            yield folder, json.load(_cfg)
+        self.load_packages_cfg(os.path.join(basedir, 'snippets_ct'), CT_SNIPPET)
+        self.load_packages_cfg(os.path.join(basedir, 'snippets_vs'), VS_SNIPPET)
 
+    def load_by_lexer(self, lex):
+        for pkg in self.packages:
+            if not pkg['loaded'] and lex in pkg['lexers']:
+                self.load_pkg(pkg)
+        return self.snippets.get(lex, [])
 
-def load_snippets(basedir):
-    snips = {}
-    glob = []  # ???? maybe not need global snippets
-    # load std snips
-    std_dir = os.path.join(basedir, 'snippets')
-    mkdir(std_dir)
-    for root, subdirs, files in os.walk(std_dir):
-        for f in files:
-            fp = os.path.join(root, f)
-            if f.endswith(SNIP_EXTENSION) or f.endswith(SNIP_EXTENSION2):
-                res = parse_snippet_file(fp)
-                if res:
-                    if res.lex:
-                        for lx in res.lex:
-                            snips.setdefault(lx, []).append(res)
-                    else:
-                        glob.append(res)
-            if f.endswith(SNIP_EXTENSION_ALT):
-                for res in parse_simple_snippet_line(fp):
-                    if res.lex:
-                        snips.setdefault(res.lex, []).append(res)
-                    else:
-                        glob.append(res)
+    def load_all(self):
+        for pkg in self.packages:
+            self.load_pkg(pkg)
 
-    # load vs snips
-    vs_dir = os.path.join(basedir, 'snippets_vs')
-    mkdir(vs_dir)
-    for folder, cfg in load_vs_snip_exts(vs_dir):
-        files = cfg.get('files', {})
+    def load_pkg(self, pkg):
+        path = pkg['path']
+        files = pkg.get('files', {})
         for fn, lexs in files.items():
-            fp = os.path.join(folder.path, 'snippets', fn)
-            _snips = parse_vs_snippets_file(fp, lexs)
+            fp = os.path.join(path, 'snippets', fn)
+            _snips = parse_vs_snippets_file(fp, lexs, pkg['type'])
             for lx in lexs:
-                snips.setdefault(lx, []).extend(_snips)
+                self.snippets.setdefault(lx, []).extend(_snips)
+        pkg['loaded'] = True
 
-    for lx in snips:
-        snips[lx].sort()
-    glob.sort()
+    def load_packages_cfg(self, path, sn_type):
+        if not os.path.exists(path):
+            return
+        for pkg in os.scandir(path):
+            if not pkg.is_dir():
+                continue
+            cfg_path = os.path.join(pkg, 'config.json')
+            if not os.path.exists(cfg_path):
+                print("{} - it isn't package".format(cfg_path))
+                return
+            with open(cfg_path, 'r', encoding='utf8') as _cfg:
+                cfg = json.load(_cfg)
+            lexers = set()
+            for lx in cfg.get('files', {}).values():
+                lexers.update(lx)
+            cfg.update(
+                {'path': pkg, 'type': sn_type, 'lexers': lexers, 'loaded': False}
+            )
+            self.packages.append(cfg)
 
-    return snips, glob
 
+def convert_old_pkg(old_pkg, sn_ct_dir):
+    config = {}
+    name = os.path.basename(old_pkg)
+    dev(name)
+    config['name'] = name
+
+    snips = {}
+    glob = []
+
+    for sn in os.scandir(old_pkg):
+        if sn.path.endswith(SNIP_EXTENSION) or sn.path.endswith(SNIP_EXTENSION2):
+            res = parse_snippet_file(sn)
+            if res:
+                if res.lex:
+                    lx = res.lex if isinstance(res.lex, str) else ','.join(res.lex)
+                    snips.setdefault(lx, []).append(res)
+                else:
+                    glob.append(res)
+        if sn.path.endswith(SNIP_EXTENSION_ALT):
+            for res in parse_simple_snippet_line(sn):
+                if res.lex:
+                    lx = res.lex if isinstance(res.lex, str) else ','.join(res.lex)
+                    snips.setdefault(lx, []).append(res)
+                else:
+                    glob.append(res)
+    if snips or glob:
+        # shutil.rmtree(old_pkg)
+        mkdir(sn_ct_dir)
+        # make new snippets package folder
+        new_pkg = os.path.join(sn_ct_dir, name)
+        mkdir(new_pkg)
+        mkdir(os.path.join(new_pkg, "snippets"))
+
+        for lex in snips:
+            # dev(f'{lex}={len(snips[lex])}')
+            sn_f = {sn._name: {"prefix": sn.id, "body": sn.text} for sn in snips[lex]}
+            # dev(sn_f)
+            file_name = lex + '.json'
+            save_to_json(sn_f, os.path.join(new_pkg, "snippets", file_name), sort_keys=True)
+            config.setdefault('files', {}).update({file_name: lex.split(',')})
+        # save config.json
+        save_to_json(config, os.path.join(new_pkg, 'config.json'))
+
+
+if __name__ == '__main__':
+    pass
+
+    # dev.tstart()
+    # ld = Loader(r"b:\TC_LOM\Plugins\exe\Cudatext\data")
+    # dev.tstop()
+
+    # dev.tstart()
+    # ld.load_by_lexer('Python')
+    # dev.tstop()
+
+    # dev.tstart()
+    # ld.load_by_lexer('Python')
+    # dev.tstop()
+
+    # dev.tstart()
+    # ld.load_all()
+    # dev.tstop()

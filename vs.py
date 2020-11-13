@@ -11,7 +11,7 @@ import cudatext as ct
 
 
 TEMPDIR = os.path.join(tempfile.gettempdir(), 'cudatext')
-TEMPFILE = os.path.join(TEMPDIR, 'sn.vsix')
+TEMPFILE = os.path.join(TEMPDIR, 'sn.zip')
 URL = "https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery"
 HEAD = {
     "accept": "application/json;api-version=3.0-preview.1",
@@ -157,7 +157,7 @@ def get_2keys(data, k1, k2):
 
 def prepare_vs_snips(f):
     if not zipfile.is_zipfile(f):
-        ct.msg_box("Sorry, but this package is broken",
+        ct.msg_box("Can't install this package",
                    ct.MB_OK+ct.MB_ICONERROR)
         return
     with zipfile.ZipFile(f) as _zip:
@@ -201,13 +201,14 @@ def prepare_vs_snips(f):
 
 def download(url, file_name=TEMPFILE):
     """Download extension by url, and save into file_name"""
-    with open(file_name, "wb") as file:
+    with open(file_name, "wb") as f:
         r = requests.get(url)
         if r.status_code == 200:
-            file.write(r.content)
-            return prepare_vs_snips(file_name)
+            f.write(r.content)
         else:
             ct.msg_box("Can't download this package.\nStatus code {}".format(r.status_code), ct.MB_OK+ct.MB_ICONERROR)
+            return
+    return prepare_vs_snips(file_name)
 
 
 def install_vs_snips(path, vs: Dict):
