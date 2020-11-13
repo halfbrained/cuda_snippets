@@ -191,7 +191,6 @@ class Loader():
 def convert_old_pkg(old_pkg, sn_ct_dir):
     config = {}
     name = os.path.basename(old_pkg)
-    dev(name)
     config['name'] = name
 
     snips = {}
@@ -213,6 +212,8 @@ def convert_old_pkg(old_pkg, sn_ct_dir):
                     snips.setdefault(lx, []).append(res)
                 else:
                     glob.append(res)
+
+    print("{}".format(old_pkg))
     if snips or glob:
         # shutil.rmtree(old_pkg)
         mkdir(sn_ct_dir)
@@ -230,6 +231,9 @@ def convert_old_pkg(old_pkg, sn_ct_dir):
             config.setdefault('files', {}).update({file_name: lex.split(',')})
         # save config.json
         save_to_json(config, os.path.join(new_pkg, 'config.json'))
+        print("Package of snippets converted.")
+    else:
+        print("It is not a snippets package.")
 
 
 if __name__ == '__main__':
