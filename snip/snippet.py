@@ -13,7 +13,6 @@ CT_SNIPPET = 0
 VS_SNIPPET = 1
 TABSTOP = 0
 PLACEHOLDER = 1
-RE_TOKEN_PART = re.compile(r"(?<!\\)\$\d+|\${\d+:|\${|}")
 RE_DATE = re.compile(r'\${date:(.*?)}')
 RE_ENV = re.compile(r'\${env:(.*?)}')
 
@@ -130,6 +129,13 @@ class Snippet:
         self.text = [text] if isinstance(text, str) else text
         self.type = t
 
+    @property
+    def _name(self):
+        if self.name:
+            return self.name
+        else:
+            return self.id
+
     def __repr__(self):
         lex = ', '.join(self.lex) if isinstance(self.lex, list) else self.lex
         _id = ', '.join(self.id)
@@ -191,7 +197,6 @@ class Snippet:
         # parse Tabstops and Placeholders
         _mrks = ed.markers(ct.MARKERS_GET) or {}
         basetag = max([i[-1] for i in _mrks]) if _mrks else 0
-        # s_text, zero_markers, markers = self.parse_tabstops_vs(sn, x0, y0, basetag=basetag)
         s_text, zero_markers, markers = self.parse_tabstops(sn, x0, y0, basetag=basetag)
         if not s_text:
             print('Wrong snippet: {}'.format(self.name))
@@ -351,11 +356,16 @@ class Snippet:
 
     @staticmethod
     def parse_tabstops(sn, x0, y0, basetag):
+
+        def get_new_ln(new_ln, shift, t):
+            return new_ln[:shift+t.start(0)] + new_ln[shift+t.end(0):]
+
         zero_markers = []
         markers = []
 
         buf = []
         for y, ln in enumerate(sn):
+            new_ln: str = ln
             shift = 0
             for t in RE_TOKEN_PART.finditer(ln):
 
@@ -370,6 +380,7 @@ class Snippet:
                         zero_markers.append(m)
                     else:
                         markers.append(m)
+                    new_ln = get_new_ln(new_ln, shift, t)
                     shift -= len(t[0])
 
                 elif is_placeholder_head(t[0]):
@@ -380,12 +391,13 @@ class Snippet:
                         shift=shift,
                         tag=int(t[2])
                     )
+                    new_ln = get_new_ln(new_ln, shift, t)
                     buf.append(p)
                     shift -= t.end(0) - t.start(0)
 
                 elif is_placeholder_tail(t[0]):
                     if not buf:
-                        return None, None, None
+                        continue
                     p = buf.pop()
                     x = t.start(0)
                     ln_x = (x + shift) - (p.x0 + p.shift) if y - p.y == 0 else x + shift
@@ -396,6 +408,7 @@ class Snippet:
                         len_x=ln_x,
                         len_y=y-p.y
                     )
+                    new_ln = get_new_ln(new_ln, shift, t)
                     # dev(m, p.shift, shift, buf)
                     if p.tag == 0:
                         zero_markers.append(m)
@@ -404,7 +417,7 @@ class Snippet:
                     shift -= 1
 
             # cln text line
-            sn[y] = RE_TOKEN_PART.sub('', ln)
+            sn[y] = new_ln
 
         # convert zero markers to maximum markers if already has markers in editor
         if basetag != 0 and markers:
@@ -418,11 +431,44 @@ class Snippet:
         return sn, zero_markers, markers
 
 
-if __name__ == '__main__':
-    ts = VariableState(ct.ed)
-    print(vars(ts))
-    _sn = [
-        "${date:%Y}",
-        "${env:PATH}"
-    ]
-    print(Snippet().parse_vars_ct(ts, _sn))
+# if __name__ == '__main__':
+    # ts = VariableState(ct.ed)
+    # print(vars(ts))
+    # _sn = [
+    #     "${date:%Y}",
+    #     "${env:PATH}"
+    # ]
+    # print(Snippet().parse_vars_ct(ts, _sn))
+
+    # _t = [
+    #     "--- Class for ${1:description}",
+    #     "",
+    #     "-- @var class var for this lib",
+    #     "local ${TM_FILENAME_BASE/[^a-z]*([a-z]+)/${1:/capitalize}/g} = {}",
+    #     "",
+    #     "--- Create a new instance",
+    #     "-- @param vararg",
+    #     "-- @return self",
+    #     "function ${TM_FILENAME_BASE/[^a-z]*([a-z]+)/${1:/capitalize}/g}.create( ... )",
+    #     "\tlocal self = setmetatable( {}, ${TM_FILENAME_BASE/[^a-z]*([a-z]+)/${1:/capitalize}/g} )",
+    #     "\tself:_init( ... )",
+    #     "\treturn self",
+    #     "end",
+    #     "",
+    #     "--- Initialize a new instance",
+    #     "-- @private",
+    #     "-- @param vararg",
+    #     "-- @return self",
+    #     "function ${TM_FILENAME_BASE/[^a-z]*([a-z]+)/${1:/capitalize}/g}:_init( ... ) -- luacheck: no unused args",
+    #     "\tlocal t = { ... }",
+    #     "\t--@todo must probably be completed",
+    #     "\treturn self",
+    #     "end",
+    #     "",
+    #     "$0",
+    #     "",
+    #     "-- Return the final class",
+    #     "return ${TM_FILENAME_BASE/[^a-z]*([a-z]+)/${1:/capitalize}/g}"
+    # ]
+    # _sn = Snippet(name='1', id='1', lex='lua', text=_t, t=VS_SNIPPET)
+    # print(_sn.insert(ct.ed))

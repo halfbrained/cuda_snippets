@@ -4,9 +4,6 @@ import cudatext as ct
 from cuda_snippets import vs
 
 
-# from cuda_dev import dev
-
-
 class DlgLexersCompare:
     def __init__(self, data=None):
         self.data = data
@@ -106,15 +103,15 @@ class DlgLexersCompare:
             for n, i in enumerate(v.split(';')[1].split(',')):
                 if i == '1':
                     lexer = self.lexers[n]
-                    lx: list = new.get(lexer, [])
+                    lx = new.get(lexer, [])
                     for x in files[k]:
                         if x not in lx:
                             lx.append(x)
                     new[lexer] = lx
 
         if not new:
-            ct.msg_box('You must check at least one CudaText lexer, for snippets to work', 
-                ct.MB_OK+ct.MB_ICONWARNING)
+            ct.msg_box('You must check at least one CudaText lexer, for snippets to work',
+                       ct.MB_OK+ct.MB_ICONWARNING)
             return
 
         self.data['files'] = new
@@ -128,17 +125,17 @@ class DlgLexersCompare:
         ct.dlg_proc(self.h, ct.DLG_FREE)
 
 
-if __name__ == '__main__':
-    data = {
-        'name': 'js-jsx-snippets',
-        'version': '10.1.0',
-        'display_name': 'JS JSX Snippets',
-        'description': 'Simple extensions for React, Redux in JS with babel and ES6 syntax',
-        'files': {
-            'javascript': ['extension/snippets/snippets.json'],
-            'javascriptreact': ['extension/snippets/snippets.json'],
-            'typescript': ['extension/snippets/snippets.json'],
-            'typescriptreact': ['extension/snippets/snippets.json']
-        }
-    }
-    DlgLexersCompare(data).show()
+# if __name__ == '__main__':
+#     _data = {
+#         'name': 'js-jsx-snippets',
+#         'version': '10.1.0',
+#         'display_name': 'JS JSX Snippets',
+#         'description': 'Simple extensions for React, Redux in JS with babel and ES6 syntax',
+#         'files': {
+#             'javascript': ['extension/snippets/snippets.json'],
+#             'javascriptreact': ['extension/snippets/snippets.json'],
+#             'typescript': ['extension/snippets/snippets.json'],
+#             'typescriptreact': ['extension/snippets/snippets.json']
+#         }
+#     }
+#     DlgLexersCompare(_data).show()

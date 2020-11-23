@@ -1,5 +1,4 @@
 import zipfile
-from collections import namedtuple
 import os
 import shutil
 import json
@@ -7,14 +6,12 @@ import requests
 import tempfile
 import threading as th
 from typing import Dict
+
 import cudatext as ct
 
-# from cuda_dev import dev
 
-
-lock_exts = th.Lock()
 TEMPDIR = os.path.join(tempfile.gettempdir(), 'cudatext')
-TEMPFILE = os.path.join(TEMPDIR, 'sn.vsix')
+TEMPFILE = os.path.join(TEMPDIR, 'sn.zip')
 URL = "https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery"
 HEAD = {
     "accept": "application/json;api-version=3.0-preview.1",
@@ -35,7 +32,6 @@ mkdir(TEMPDIR)
 def make_exts_list(src):
     """Make Extension list.
     """
-    # dev(src)
     extensions = src.get('results')[0].get("extensions")
     extensions_list = []
     for e in extensions:
@@ -128,6 +124,7 @@ def query_all_snips_extensions(page_size=50, page_number=1):
 
 
 def get_all_snip_exts():
+    lock_exts = th.Lock()
     result = []
 
     def get_res(page_number):
@@ -137,7 +134,6 @@ def get_all_snip_exts():
         with lock_exts:
             result.extend(res)
 
-    # dev.tstart()
     threds = []
     try:
         for i in range(1, 10):
@@ -146,8 +142,6 @@ def get_all_snip_exts():
             t.start()
         for i in threds:
             i.join()
-        # dev.tstop()
-        # dev(len(result))
     except requests.exceptions.ConnectionError:
         print("Connection error :(")
     return result
@@ -160,9 +154,11 @@ def get_2keys(data, k1, k2):
     else:
         return ''
 
+
 def prepare_vs_snips(f):
     if not zipfile.is_zipfile(f):
-        print('It is not a zip file')
+        ct.msg_box("Can't install this package",
+                   ct.MB_OK+ct.MB_ICONERROR)
         return
     with zipfile.ZipFile(f) as _zip:
         with _zip.open('extension/package.json') as package:
@@ -182,12 +178,14 @@ def prepare_vs_snips(f):
             }
             contributes = js.get('contributes')
             if not contributes:
+                ct.msg_box("Sorry, but this package doesn't have any snippets",
+                           ct.MB_OK+ct.MB_ICONERROR)
                 return
             files = {}
             snips = contributes.get('snippets')
             if not snips:
                 ct.msg_box("Sorry, but this package doesn't have any snippets",
-                    ct.MB_OK+ct.MB_ICONERROR)
+                           ct.MB_OK+ct.MB_ICONERROR)
                 return
             for sn in snips:
                 lang = sn['language']
@@ -203,11 +201,14 @@ def prepare_vs_snips(f):
 
 def download(url, file_name=TEMPFILE):
     """Download extension by url, and save into file_name"""
-    with open(file_name, "wb") as file:
+    with open(file_name, "wb") as f:
         r = requests.get(url)
         if r.status_code == 200:
-            file.write(r.content)
-            return prepare_vs_snips(file_name)
+            f.write(r.content)
+        else:
+            ct.msg_box("Can't download this package.\nStatus code {}".format(r.status_code), ct.MB_OK+ct.MB_ICONERROR)
+            return
+    return prepare_vs_snips(file_name)
 
 
 def install_vs_snips(path, vs: Dict):
@@ -240,10 +241,3 @@ def install_vs_snips(path, vs: Dict):
             src = zf.open(fp)
             with open(os.path.join(snp_dir, fp.split('/')[-1]), 'wb') as f:
                 shutil.copyfileobj(src, f)
-
-
-if __name__ == '__main__':
-    allse = get_all_snip_exts()
-    print(len(allse))
-    # print(allse[0])
-    # q = query_all_snips_extensions(page_size=1)

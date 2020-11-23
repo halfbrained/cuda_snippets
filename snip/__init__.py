@@ -1,3 +1,5 @@
+from .loader import Loader
+from .loader import convert_old_pkg
+from .loader import mkdir
 from .snippet import Snippet
-from .loader import load_snippets
 from .utils import get_word

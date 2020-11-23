@@ -10,12 +10,16 @@ section=events
 events=on_key+
 keys=9
 
-[item2]
+;[item2]
+;section=events
+;events=on_start
+
+[item3]
 section=commands
 caption=Snippets\Snippets menu...
 method=do_menu
 
-[item3]
+[item4]
 section=commands
 caption=Snippets\Delete snippet markers
 method=del_markers
@@ -59,3 +63,8 @@ method=remove_vs_snip
 section=commands
 caption=Addons Manager\Visit homepage of VSCode snippets...
 method=issues_vs
+
+[item99]
+section=commands
+caption=Snippets\Convert snippets package from old format
+method=convert_from_old_format
