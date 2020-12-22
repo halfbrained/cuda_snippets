@@ -9,6 +9,8 @@ from typing import Dict
 
 import cudatext as ct
 
+from cudax_lib import get_translation
+_   = get_translation(__file__)  # I18N
 
 TEMPDIR = os.path.join(tempfile.gettempdir(), 'cudatext')
 TEMPFILE = os.path.join(TEMPDIR, 'sn.zip')
@@ -143,7 +145,7 @@ def get_all_snip_exts():
         for i in threds:
             i.join()
     except requests.exceptions.ConnectionError:
-        print("Connection error :(")
+        print(_("Connection error :("))
     return result
 
 
@@ -157,7 +159,7 @@ def get_2keys(data, k1, k2):
 
 def prepare_vs_snips(f):
     if not zipfile.is_zipfile(f):
-        ct.msg_box("Can't install this package",
+        ct.msg_box(_("Can't install this package"),
                    ct.MB_OK+ct.MB_ICONERROR)
         return
     with zipfile.ZipFile(f) as _zip:
@@ -178,14 +180,14 @@ def prepare_vs_snips(f):
             }
             contributes = js.get('contributes')
             if not contributes:
-                ct.msg_box("Sorry, but this package doesn't have any snippets",
+                ct.msg_box(_("Sorry, but this package doesn't have any snippets"),
                            ct.MB_OK+ct.MB_ICONERROR)
                 return
             files = {}
             snips = contributes.get('snippets')
             if not snips:
-                ct.msg_box("Sorry, but this package doesn't have any snippets",
-                           ct.MB_OK+ct.MB_ICONERROR)
+                ct.msg_box(_("Sorry, but this package doesn't have any snippets"),
+                    ct.MB_OK+ct.MB_ICONERROR)
                 return
             for sn in snips:
                 lang = sn['language']
@@ -206,7 +208,7 @@ def download(url, file_name=TEMPFILE):
         if r.status_code == 200:
             f.write(r.content)
         else:
-            ct.msg_box("Can't download this package.\nStatus code {}".format(r.status_code), ct.MB_OK+ct.MB_ICONERROR)
+            ct.msg_box(_("Can't download this package.\nStatus code {}").format(r.status_code), ct.MB_OK+ct.MB_ICONERROR)
             return
     return prepare_vs_snips(file_name)
 
