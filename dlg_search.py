@@ -1,9 +1,11 @@
-﻿import re
+import re
 import os
 
 import cudatext as ct
 from cuda_snippets import vs
 
+from cudax_lib import get_translation
+_   = get_translation(__file__)  # I18N
 
 PLUG = "snippets"
 
@@ -91,7 +93,7 @@ class DlgSearch:
         w, h = 600, 400
         self.h = ct.dlg_proc(0, ct.DLG_CREATE)
         ct.dlg_proc(self.h, ct.DLG_PROP_SET,
-                    prop={'cap': 'Search snippets',
+                    prop={'cap': _('Search snippets'),
                           'w': w,
                           'h': h,
                           # 'resize': False,
@@ -314,7 +316,7 @@ class DlgSearch:
     def install(self, *args, **kwargs):
         ext = self.exts[self.item_index]
         ct.dlg_proc(self.h, ct.DLG_HIDE)
-        ct.msg_status(' '.join(["Installing: ", ext['display_name'], ext['version']]), process_messages=True)
+        ct.msg_status(' '.join([_("Installing: "), ext['display_name'], ext['version']]), process_messages=True)
 
         self.data = vs.download(ext['url'])
         if not self.data:
