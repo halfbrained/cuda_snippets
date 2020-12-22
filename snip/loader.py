@@ -1,4 +1,4 @@
-﻿import json
+import json
 import os
 import re
 
@@ -6,6 +6,9 @@ from cuda_snippets.snip.utils import load_json
 from cuda_snippets.snip.snippet import Snippet, CT_SNIPPET, VS_SNIPPET
 
 # from cuda_dev import dev
+
+from cudax_lib import get_translation
+_   = get_translation(__file__)  # I18N
 
 SNIP_EXTENSION = '.synw-snippet'
 SNIP_EXTENSION2 = '.cuda-snippet'
@@ -231,9 +234,9 @@ def convert_old_pkg(old_pkg, sn_ct_dir):
             config.setdefault('files', {}).update({file_name: lex.split(',')})
         # save config.json
         save_to_json(config, os.path.join(new_pkg, 'config.json'))
-        print("Package of snippets converted.")
+        print(_("Package of snippets converted."))
     else:
-        print("It is not a snippets package.")
+        print(_("It is not a snippets package."))
 
 
 if __name__ == '__main__':
