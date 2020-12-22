@@ -9,6 +9,9 @@ import cudatext as ct
 import cudatext_cmd
 # from cuda_dev import dev
 
+from cudax_lib import get_translation
+_   = get_translation(__file__)  # I18N
+
 CT_SNIPPET = 0
 VS_SNIPPET = 1
 TABSTOP = 0
@@ -199,7 +202,7 @@ class Snippet:
         basetag = max([i[-1] for i in _mrks]) if _mrks else 0
         s_text, zero_markers, markers = self.parse_tabstops(sn, x0, y0, basetag=basetag)
         if not s_text:
-            print('Wrong snippet: {}'.format(self.name))
+            print(_('Wrong snippet: {}').format(self.name))
             return
 
         # insert text
