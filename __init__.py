@@ -8,6 +8,9 @@ import cudatext as ct
 from cuda_snippets import snip as sn
 # dev.tstop()
 
+from cudax_lib import get_translation
+_   = get_translation(__file__)  # I18N
+
 DATA_DIR = ct.app_path(ct.APP_DIR_DATA)
 
 
@@ -62,13 +65,13 @@ class Command:
     def menu_dlg(self, items):
         names = [str(item) for item in items]
         if not names:
-            ct.msg_status('No snippets for current lexer')
+            ct.msg_status(_('No snippets for current lexer'))
             return
         try:
             focused = items.index(self.last_snippet)
         except ValueError:
             focused = 0
-        i = ct.dlg_menu(ct.MENU_LIST, names, focused=focused, caption='Snippets')
+        i = ct.dlg_menu(ct.MENU_LIST, names, focused=focused, caption=_('Snippets'))
         if i is None:
             return
         self.last_snippet = items[i]
@@ -88,10 +91,10 @@ class Command:
 
         # load vs snippets list
         if not self.vs_exts:
-            ct.msg_status("Loading VS Snippets list. Please wait...", process_messages=True)
+            ct.msg_status(_("Loading VS Snippets list. Please wait..."), process_messages=True)
             self.vs_exts = vs.get_all_snip_exts()
             if not self.vs_exts:
-                print("Can't download VS Snippets. Try again later...")
+                print(_("Can't download VS Snippets. Try again later..."))
                 return
         # show dlg
         self.dlg_search.set_vs_exts(self.vs_exts)
@@ -115,7 +118,7 @@ class Command:
                      tag='cuda_snippets'
                      )
         ct.menu_proc("text", ct.MENU_ADD,
-                     caption='Delete snippet markers',
+                     caption=_('Delete snippet markers'),
                      command=self.del_markers,
                      # hotkey=hotkey,
                      tag='cuda_snippets'
@@ -147,36 +150,36 @@ class Command:
     def issues_vs(self):
         rec = self.vs_local_dirs()
         if not rec:
-            ct.msg_status('No VSCode snippets found')
+            ct.msg_status(_('No VSCode snippets found'))
             return
 
         mnu = [s['name']+'\t'+s['url'] for s in rec]
-        res = ct.dlg_menu(ct.MENU_LIST_ALT, mnu, caption='Visit page of snippets')
+        res = ct.dlg_menu(ct.MENU_LIST_ALT, mnu, caption=_('Visit page of snippets'))
         if res is None:
             return
 
         url = rec[res]['url']
         if not url:
-            ct.msg_status("No URL found")
+            ct.msg_status(_("No URL found"))
             return
-        ct.msg_status('Opened: '+url)
+        ct.msg_status(_('Opened: ')+url)
         webbrowser.open_new_tab(url)
 
     def remove_vs_snip(self):
         rec = self.vs_local_dirs()
 
         if not rec:
-            ct.msg_status('No VSCode snippets found')
+            ct.msg_status(_('No VSCode snippets found'))
             return
 
         mnu = [s['name'] for s in rec]
-        res = ct.dlg_menu(ct.MENU_LIST, mnu, caption='Remove snippets')
+        res = ct.dlg_menu(ct.MENU_LIST, mnu, caption=_('Remove snippets'))
         if res is None:
             return
 
         vs_snip_dir = rec[res]['dir']
         shutil.rmtree(vs_snip_dir)
-        ct.msg_status('Snippets folder removed; restart CudaText to forget about it')
+        ct.msg_status(_('Snippets folder removed; restart CudaText to forget about it'))
 
     def convert_from_old_format(self):
         _data = ct.app_path(ct.APP_DIR_DATA)
