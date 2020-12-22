@@ -3,6 +3,8 @@ import os
 import cudatext as ct
 from cuda_snippets import vs
 
+from cudax_lib import get_translation
+_   = get_translation(__file__)  # I18N
 
 class DlgLexersCompare:
     def __init__(self, data=None):
@@ -14,7 +16,7 @@ class DlgLexersCompare:
         w, h = 600, 400
         self.h = ct.dlg_proc(0, ct.DLG_CREATE)
         ct.dlg_proc(self.h, ct.DLG_PROP_SET,
-                    prop={'cap': 'Setup snippet lexer(s)',
+                    prop={'cap': _('Setup snippet lexer(s)'),
                           'w': w,
                           'h': h,
                           'resize': False,
@@ -110,8 +112,8 @@ class DlgLexersCompare:
                     new[lexer] = lx
 
         if not new:
-            ct.msg_box('You must check at least one CudaText lexer, for snippets to work',
-                       ct.MB_OK+ct.MB_ICONWARNING)
+            ct.msg_box(_('You must check at least one CudaText lexer, for snippets to work'), 
+                ct.MB_OK+ct.MB_ICONWARNING)
             return
 
         self.data['files'] = new
