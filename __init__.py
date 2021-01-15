@@ -134,11 +134,11 @@ class Command:
         for data in self.loader.packages:
             if data['type'] != 1:
                 continue
-            name = data.get('display_name', '') + ' ' + data.get('version', '')
+            name = (data.get('display_name') or '') + ' ' + (data.get('version') or '')
             url = ''
-            lnk = data.get('links', '')
+            lnk = data.get('links') or ''
             if lnk:
-                url = lnk.get('bugs', '') or lnk.get('repository', '')
+                url = lnk.get('bugs') or lnk.get('repository') or ''
                 if url.endswith('.git'):
                     url = url[:-4]
             if name:
