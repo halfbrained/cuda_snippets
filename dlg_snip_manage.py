@@ -32,7 +32,9 @@ def log(s):
 
 #class DlgLexersCompare:
 class DlgSnipMan:
-    def __init__(self):
+    def __init__(self, select_lex=None):
+        self.select_lex = select_lex # select first group with this lexer, mark in menus
+        
         self.packages = self._load_packages()
         self._sort_pkgs()
         self.file_snippets = {} # tuple (<pkg path>,<group>) : snippet dict
@@ -221,6 +223,8 @@ class DlgSnipMan:
                         'on_change': self._on_snippet_selected,
                         'act': True,
                         'en': False,
+                        'cap': 'lol?',
+                        'hint': 'crap!',
                         }
                     )
                     
@@ -274,12 +278,33 @@ class DlgSnipMan:
         self.ed.set_prop(ct.PROP_UNPRINTED_SPACES, True)
         self.ed.set_prop(ct.PROP_TAB_SPACES, False)
                     
-        self._fill_forms()
+        self._fill_forms(init_lex_sel=self.select_lex) # select first group with specified lexer if any
         
-    def _fill_forms(self, sel_pkg_path=None, sel_group=None, sel_snip=None):
+    def _fill_forms(self, init_lex_sel=None, sel_pkg_path=None, sel_group=None, sel_snip=None):
         # fill packages
         items = [pkg.get('name') for pkg in self.packages]
         self.pkg_items = [*items] #TODO use
+        
+        # select first group with <lexer>
+        if init_lex_sel:
+            found = False
+            for pkg in self.packages:
+                for fn,lexs in pkg.get('files', {}).items():
+                    if init_lex_sel in lexs:
+                        if not found:
+                            found = True
+                            sel_pkg_path = pkg['path']
+                            sel_group = fn
+                        break
+                if found:
+                    break
+        # select package with specified lexer
+        if self.select_lex:
+            for i,pkg in enumerate(self.packages):
+                for fn,lexs in pkg.get('files', {}).items():
+                    if self.select_lex in lexs:
+                        items[i] += f'   (*{self.select_lex})'
+                        break
         
         items.insert(0, '[New...]')
         items = '\t'.join(items)
@@ -298,7 +323,8 @@ class DlgSnipMan:
                     break
                     
         ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=self.n_package, prop=props)
-        self._on_package_selected(-1,-1)
+        if sel_pkg_ind >= 0:
+            self._on_package_selected(-1,-1)
 
         # select group
         if sel_pkg != None  and sel_group  and sel_group in sel_pkg.get('files', {}):
@@ -418,6 +444,12 @@ class DlgSnipMan:
         items = list(pkg['files'])
         items.sort()
         self._groups_items = [*items] #TODO reset when resetting
+        
+        # select package with specified lexer
+        if self.select_lex and items:
+            for i,lexs in enumerate(pkg.get('files', {}).values()):
+                if self.select_lex in lexs:
+                    items[i] += f'   (*{self.select_lex})'
         
         items.insert(0, '[New...]')
         items = '\t'.join(items)

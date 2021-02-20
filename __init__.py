@@ -85,7 +85,8 @@ class Command:
         from cuda_snippets.dlg_snip_manage import DlgSnipMan
         
         try:
-            dlg_add = DlgSnipMan()
+            lex = ct.ed.get_prop(ct.PROP_LEXER_FILE)
+            dlg_add = DlgSnipMan(select_lex=lex)
             self._dlg = dlg_add # for debug
             changed = dlg_add.show_add_snip()
         except Exception as ex:
