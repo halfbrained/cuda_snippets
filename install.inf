@@ -19,6 +19,11 @@ section=commands
 caption=Snippets\Snippets menu...
 method=do_menu
 
+[item30]
+section=commands
+caption=Snippets\Add snippet...
+method=show_add_snippet
+
 [item4]
 section=commands
 caption=Snippets\Delete snippet markers
