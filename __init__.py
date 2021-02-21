@@ -87,7 +87,7 @@ class Command:
         try:
             lex = ct.ed.get_prop(ct.PROP_LEXER_FILE)
             dlg_add = DlgSnipMan(select_lex=lex)
-            self._dlg = dlg_add # for debug
+            self._dlg = dlg_add # DBG
             changed = dlg_add.show_add_snip()
         except Exception as ex:
             import traceback
