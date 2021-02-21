@@ -38,6 +38,8 @@ class DlgSnipMan:
     def __init__(self, select_lex=None):
         self.select_lex = select_lex # select first group with this lexer, mark in menus
         
+        self.snippets_changed = False
+        
         self.packages = self._load_packages()
         self._sort_pkgs()
         self.file_snippets = {} # tuple (<pkg path>,<group>) : snippet dict
@@ -429,7 +431,7 @@ class DlgSnipMan:
         '!!! changed'
         #import sys
         #sys.exit(0)
-        return False
+        return self.snippets_changed
 
     def _save_changes(self, *args, **vargs):
         print(f'saving changes: {self.modified}')
@@ -516,6 +518,7 @@ class DlgSnipMan:
                 print(f'* already saved, skipping: {file_dst}')
                 continue
             saved_files.add(file_dst)
+            
                 
             if ALLOW_FILE_MODIFICATION:
                 # DBG
@@ -525,6 +528,8 @@ class DlgSnipMan:
                                                             ct.MB_OKCANCEL | ct.MB_ICONWARNING) 
                 if res == ct.ID_OK:
                     print(f'*** saving data: {file_dst}')
+                    
+                    self.snippets_changed = True
                     
                     folder = os.path.dirname(file_dst)
                     if not os.path.exists(folder):
@@ -536,6 +541,8 @@ class DlgSnipMan:
 
             else:
                 print(f'! fake saving: {file_dst}:\n{json.dumps(data, indent=2)}')
+        
+        ct.dlg_proc(self.h, ct.DLG_HIDE)
 
 
     def _dismiss_dlg(self, *args, **vargs):
