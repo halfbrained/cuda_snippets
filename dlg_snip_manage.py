@@ -23,43 +23,87 @@ SNIP_DIRS = [
 TYPE_PKG = 101
 TYPE_GROUP = 102 
 
-#TODO check for proper filenames for filesystem
-#TODO handle same name packages
-#TODO sort modifieds before saving
 
-def log(s):
-    if True:
-        now = datetime.datetime.now()
-        with open('/media/q/cu.log', 'a', encoding='utf-8') as f:
-            f.write(now.strftime("%H:%M:%S ") + s + '\n')
+HELP_TEXT = """Markers:
+    ${NN} | ${NN:default text}
 
-#class DlgLexersCompare:
+Macros:
+    ${sel} - Text selected before snippet insertion (if snippet called with Tab key, it's empty string)
+    ${cp} - Current clipboard contents
+
+    ${cmt_start} - Current lexer's "block comment" start symbols (or empty string)
+    ${cmt_end} - Current lexer's "block comment" end symbols (or empty string)
+    ${cmt_line} - Current lexer's "line comment" symbols (or empty string)
+
+    ${fname} - File name only, without path
+    ${fpath} - Full file name, with path
+    ${fdir} - Directory of file
+    ${fext} - Extension of file
+    ${psep} - OS path separator: backslash on Windows, slash on Unix
+
+    ${date:nnnn} - Current date/time formatted by string "nnnn"; see Python docs
+    ${env:nnnn} - Value of OS environment variable "nnnn"
+    
+Sublime ($NAME | ${NAME}):
+    $TM_SELECTED_TEXT - The currently selected text or the empty string
+    $TM_CURRENT_LINE - The contents of the current line
+    $TM_CURRENT_WORD - The contents of the word under cursor or the empty string
+    $TM_LINE_INDEX - The zero-based line number
+    $TM_LINE_NUMBER - The one-based line number
+    $TM_FILEPATH - The full file path of the current document
+    $TM_DIRECTORY - The directory of the current document
+    $TM_FILENAME - The filename of the current document
+    $TM_FILENAME_BASE - The filename of the current document without its extensions
+    $CLIPBOARD - The contents of your clipboard
+    $WORKSPACE_NAME - The name of the opened workspace or folder
+
+    $BLOCK_COMMENT_START - Current lexer's "block comment" start symbols (or empty string)
+    $BLOCK_COMMENT_END - Current lexer's "block comment" end symbols (or empty string)
+    $LINE_COMMENT - Current lexer's "line comment" symbols (or empty string)
+    
+Date, time:
+    $CURRENT_YEAR - The current year
+    $CURRENT_YEAR_SHORT - The current year's last two digits
+    $CURRENT_MONTH - The month as two digits (e.g. '02')
+    $CURRENT_MONTH_NAME - The full name of the month (e.g. 'July')
+    $CURRENT_MONTH_NAME_SHORT - The short name of the month (e.g. 'Jul')
+    $CURRENT_DATE - The day of the month
+    $CURRENT_DAY_NAME - The name of day (e.g. 'Monday')
+    $CURRENT_DAY_NAME_SHORT - The short name of the day (e.g. 'Mon')
+    $CURRENT_HOUR - The current hour in 24-hour clock format
+    $CURRENT_MINUTE - The current minute
+    $CURRENT_SECOND - The current second
+    $CURRENT_SECONDS_UNIX - The number of seconds since the Unix epoch
+"""
+
+
 class DlgSnipMan:
     def __init__(self, select_lex=None):
         self.select_lex = select_lex # select first group with this lexer, mark in menus
         
         self.snippets_changed = False
+        self.h_help = None
         
         self.packages = self._load_packages()
         self._sort_pkgs()
         self.file_snippets = {} # tuple (<pkg path>,<group>) : snippet dict
         self.modified = [] # (type, name)
+    
 
         w, h = 500, 400
         self.h = ct.dlg_proc(0, ct.DLG_CREATE)
         ct.dlg_proc(self.h, ct.DLG_PROP_SET, 
-                    prop={'cap': _('Add snippet'),
+                    prop={'cap': _('Manage snippets'),
                         'w': w,
                         'h': h,
                         'resize': True,
-                        #"keypreview": True,
                         }
                     )
                     
  
         ### Controls
         
-        # Cancel | Ok
+        # Cancel | Ok | Help
         self.n_ok = ct.dlg_proc(self.h, ct.DLG_CTL_ADD, 'button')
         ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=self.n_ok,
                     prop={
@@ -68,11 +112,8 @@ class DlgSnipMan:
                         'a_t': None,
                         'a_r': ('', ']'),
                         'a_b': ('',']'),
-                        'w': 30,
-                        #'h_max': 30,
                         'w_min': 60,
                         'sp_a': 6,
-                        #'sp_t': 6,
                         'autosize': True,
                         'cap': 'OK',  
                         'on_change': self._save_changes,
@@ -87,14 +128,44 @@ class DlgSnipMan:
                         'a_t': ('ok', '-'),
                         'a_r': ('ok', '['),
                         'a_b': ('',']'),
-                        'w': 30,
-                        #'h_max': 30,
                         'w_min': 60,
                         'sp_a': 6,
-                        #'sp_t': 6,
                         'autosize': True,
-                        'cap': 'Cancel',  
+                        'cap': _('Cancel'),  
                         'on_change': self._dismiss_dlg,
+                        }
+                    )
+                    
+        n = ct.dlg_proc(self.h, ct.DLG_CTL_ADD, 'button')
+        ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=n,
+                    prop={
+                        'name': 'ed_lex',
+                        'a_l': ('', '['),
+                        'a_t': ('ok', '-'),
+                        'a_r': None,
+                        'a_b': ('',']'),
+                        'w_min': 60,
+                        'sp_a': 6,
+                        'autosize': True,
+                        'cap': _('Editor\'s Lexer'),  
+                        'on_change': self._menu_ed_lex,
+                        }
+                    )
+                    
+        n = ct.dlg_proc(self.h, ct.DLG_CTL_ADD, 'button')
+        ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=n,
+                    prop={
+                        'name': 'help',
+                        'a_l': ('ed_lex', ']'),
+                        'a_t': ('ok', '-'),
+                        'a_r': None,
+                        'a_b': ('',']'),
+                        'w_min': 60,
+                        'sp_a': 6,
+                        'sp_l': 10,
+                        'autosize': True,
+                        'cap': _('Macros Help'),  
+                        'on_change': self._dlg_help,
                         }
                     )
                     
@@ -107,9 +178,7 @@ class DlgSnipMan:
                         'a_t': ('','['),
                         'a_r': ('',']'),
                         'a_b': ('cancel','['),
-                        #'align': ct.ALIGN_CLIENT,
                         'sp_a': 3,
-                        #'sp_b': 40,
                         }
                     )
         # package
@@ -123,7 +192,7 @@ class DlgSnipMan:
                         'w_min': 80,
                         'sp_a': 3,
                         'sp_t': 6,
-                        'cap': 'Package: ',  
+                        'cap': _('Package: '),  
                         }
                     )
                     
@@ -135,14 +204,25 @@ class DlgSnipMan:
                         'a_l': None,
                         'a_t': ('pkg_label','-'),
                         'a_r': ('',']'),
-                        #'a_b': ('',']'),
-                        #'w_min': 60,
-                        #'w': 60,
                         'sp_a': 3,
-                        #'sp_t': 6,
-                        'cap': 'Delete...',  
+                        'cap': _('Delete...'),  
                         'en': False,
                         'on_change': self._dlg_del_pkg,
+                        }
+                    )
+                    
+        self.n_add_pkg = ct.dlg_proc(self.h, ct.DLG_CTL_ADD, 'button')
+        ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=self.n_add_pkg,
+                    prop={
+                        'name': 'add_pkg',
+                        'p': 'parent',
+                        'a_l': None,
+                        'a_t': ('pkg_label','-'),
+                        'a_r': ('del_pkg','['),
+                        'sp_a': 3,
+                        'cap': _('Add...'),  
+                        'en': True,
+                        'on_change': self._create_pkg,
                         }
                     )
                     
@@ -153,16 +233,13 @@ class DlgSnipMan:
                         'p': 'parent',
                         'a_l': ('pkg_label', ']'),
                         'a_t': ('pkg_label','-'),
-                        'a_r': ('del_pkg','['),
+                        'a_r': ('add_pkg','['),
                         'sp_a': 3,
                         'act': True,
                         'on_change': self._on_package_selected,
-                        #'on_change': lambda *args, **vargs: print(f' --sel'),
-                        #'on_change': 'module=cuda_snippets;cmd=_del;',
                         }
                     )
                     
-        '!!! WRIOK'   
         # group
         n = ct.dlg_proc(self.h, ct.DLG_CTL_ADD, 'label')
         ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=n,
@@ -174,7 +251,7 @@ class DlgSnipMan:
                         'w_min': 80,
                         'sp_a': 3,
                         'sp_t': 6,
-                        'cap': 'Group: ',  
+                        'cap': _('Group: '),  
                         }
                     )
                     
@@ -186,14 +263,25 @@ class DlgSnipMan:
                         'a_l': None,
                         'a_t': ('grp_label','-'),
                         'a_r': ('',']'),
-                        #'a_b': ('',']'),
-                        #'w_min': 60,
-                        #'w': 60,
                         'sp_a': 3,
-                        #'sp_t': 6,
-                        'cap': 'Delete...',  
+                        'cap': _('Delete...'),  
                         'en': False,
                         'on_change': self._dlg_del_group,
+                        }
+                    )
+                    
+        self.n_add_group = ct.dlg_proc(self.h, ct.DLG_CTL_ADD, 'button')
+        ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=self.n_add_group,
+                    prop={
+                        'name': 'add_group',
+                        'p': 'parent',
+                        'a_l': None,
+                        'a_t': ('grp_label','-'),
+                        'a_r': ('del_group','['),
+                        'sp_a': 3,
+                        'cap': _('Add...'),  
+                        'en': False,
+                        'on_change': self._create_group,
                         }
                     )
                     
@@ -204,7 +292,7 @@ class DlgSnipMan:
                         'p': 'parent',
                         'a_l': ('grp_label', ']'),
                         'a_t': ('grp_label','-'),
-                        'a_r': ('del_group','['),
+                        'a_r': ('add_group','['),
                         'sp_a': 3,
                         'act': True,
                         'on_change': self._on_group_selected,
@@ -224,7 +312,7 @@ class DlgSnipMan:
                         'sp_a': 3,
                         'sp_t': 6,
                         'sp_l': 30,
-                        'cap': 'Group\'s lexers: ',  
+                        'cap': _('Group\'s lexers: '),  
                         }
                     )
                     
@@ -236,12 +324,8 @@ class DlgSnipMan:
                         'a_l': None,
                         'a_t': ('lex_label','-'),
                         'a_r': ('',']'),
-                        #'a_b': ('',']'),
-                        #'w_min': 60,
-                        #'w': 60,
                         'sp_a': 3,
-                        #'sp_t': 6,
-                        'cap': 'Add Lexer...',  
+                        'cap': _('Add Lexer...'),  
                         'en': False,
                         'on_change': self._menu_add_lex,
                         }
@@ -271,7 +355,7 @@ class DlgSnipMan:
                         'w_min': 80,
                         'sp_a': 3,
                         'sp_t': 6,
-                        'cap': 'Snippet: ',  
+                        'cap': _('Snippet: '),  
                         }
                     )
                     
@@ -283,14 +367,25 @@ class DlgSnipMan:
                         'a_l': None,
                         'a_t': ('snip_label','-'),
                         'a_r': ('',']'),
-                        #'a_b': ('',']'),
-                        #'w_min': 60,
-                        #'w': 60,
                         'sp_a': 3,
-                        #'sp_t': 6,
-                        'cap': 'Delete...',  
+                        'cap': _('Delete...'),  
                         'en': False,
                         'on_change': self._dlg_del_snip,
+                        }
+                    )
+                    
+        self.n_add_snip = ct.dlg_proc(self.h, ct.DLG_CTL_ADD, 'button')
+        ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=self.n_add_snip,
+                    prop={
+                        'name': 'add_snip',
+                        'p': 'parent',
+                        'a_l': None,
+                        'a_t': ('snip_label','-'),
+                        'a_r': ('del_snip','['),
+                        'sp_a': 3,
+                        'cap': _('Add...'),  
+                        'en': False,
+                        'on_change': self._create_snip,
                         }
                     )
                     
@@ -301,13 +396,11 @@ class DlgSnipMan:
                         'p': 'parent',
                         'a_l': ('snip_label', ']'),
                         'a_t': ('snip_label','-'),
-                        'a_r': ('del_snip','['),
+                        'a_r': ('add_snip','['),
                         'sp_a': 3,
                         'on_change': self._on_snippet_selected,
                         'act': True,
                         'en': False,
-                        'cap': 'lol?',
-                        'hint': 'crap!',
                         }
                     )
                     
@@ -323,7 +416,7 @@ class DlgSnipMan:
                         'sp_a': 3,
                         'sp_t': 6,
                         'sp_l': 30,
-                        'cap': 'Snippet\'s alias: ',  
+                        'cap': _('Snippet\'s alias: '),  
                         }
                     )
                     
@@ -366,10 +459,11 @@ class DlgSnipMan:
                     
         self._fill_forms(init_lex_sel=self.select_lex) # select first group with specified lexer if any
         
+    
     def _fill_forms(self, init_lex_sel=None, sel_pkg_path=None, sel_group=None, sel_snip=None):
         # fill packages
         items = [pkg.get('name') for pkg in self.packages]
-        self.pkg_items = [*items] #TODO use
+        self.pkg_items = [*items]
         
         # select first group with <lexer>
         if init_lex_sel:
@@ -389,10 +483,9 @@ class DlgSnipMan:
             for i,pkg in enumerate(self.packages):
                 for fn,lexs in pkg.get('files', {}).items():
                     if self.select_lex in lexs:
-                        items[i] += f'   (*{self.select_lex})'
+                        items[i] += '   (*{0})'.format(self.select_lex)
                         break
         
-        items.insert(0, '[New...]')
         items = '\t'.join(items)
         props = {'items': items,}
         
@@ -405,7 +498,7 @@ class DlgSnipMan:
                 if pkg['path'] == sel_pkg_path:
                     sel_pkg_ind = i
                     sel_pkg = pkg
-                    props['val'] = 1 + sel_pkg_ind
+                    props['val'] = sel_pkg_ind
                     break
                     
         ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=self.n_package, prop=props)
@@ -413,35 +506,37 @@ class DlgSnipMan:
 
         # select group
         if sel_pkg != None  and sel_group  and sel_group in sel_pkg.get('files', {}):
-            sel_group_ind = 1 + self._groups_items.index(sel_group)
+            sel_group_ind = self._groups_items.index(sel_group)
             ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=self.n_groups, prop={'val': sel_group_ind})
             self._on_group_selected(-1,-1)
             
             # select snippet
             if sel_snip != None  and sel_snip in self.snip_items:
-                sel_snip_ind = 1 + self.snip_items.index(sel_snip)
+                sel_snip_ind = self.snip_items.index(sel_snip)
                 ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=self.n_snippets, prop={'val': sel_snip_ind})
                 self._on_snippet_selected(-1,-1)
             
 
     def show_add_snip(self):
         ct.dlg_proc(self.h, ct.DLG_SHOW_MODAL)
-        #ct.dlg_proc(self.h, ct.DLG_SHOW_NONMODAL)
         ct.dlg_proc(self.h, ct.DLG_FREE)
-        '!!! changed'
-        #import sys
-        #sys.exit(0)
+        
+        if self.h_help != None:
+            ct.dlg_proc(self.h_help, ct.DLG_FREE)
+            
         return self.snippets_changed
 
     def _save_changes(self, *args, **vargs):
-        print(f'saving changes: {self.modified}')
+        print(_('Saving changes'))
+
+        #pass; print('saving changes: {0}'.format(self.modified))
         
         pkg = self._get_sel_pkg()
         snips_fn,lexers = self._get_sel_group(pkg)
-        #snips = self.file_snippets.get(pkg['path'])
         snip_name,snip = self._get_sel_snip(pkg, snips_fn)  if lexers != None else  (None,None)
         
-        print(f' + {pkg["name"]} # {snips_fn}, [{lexers}] # <{snip_name}>:<{snip}>')
+        _pkg_name = pkg["name"]  if pkg else  "<no_pkg>"
+        #pass; print(' + {} # {}, [{}] # <{}>:<{}>'.format(_pkg_name, snips_fn, lexers, snip_name, snip))
         
         ### load data from form
         # check if modified group's lexers
@@ -450,11 +545,9 @@ class DlgSnipMan:
             p = ct.dlg_proc(self.h, ct.DLG_CTL_PROP_GET, index=self.n_lex)
             newlexs = [lex.strip() for lex in p['val'].split(',') if lex.strip()]
             if oldlexes != newlexs:
-                print(f'* lexs changed: [{oldlexes}] => [{newlexs}]')
+                print(_('* Group\'s lexers changed: [{0}] => [{1}]').format(oldlexes, newlexs))
                 pkg['files'][snips_fn] = newlexs
                 self.modified.append((TYPE_PKG, pkg['path']))
-            else:
-                print(f' * lexs same: {newlexs}')
 
             # check if modified snippet (alias|body)  (only if group is selected)
             if snip_name != None  and snip != None:
@@ -462,30 +555,17 @@ class DlgSnipMan:
                 p = ct.dlg_proc(self.h, ct.DLG_CTL_PROP_GET, index=self.n_alias)
                 newalias = p['val']
                 if oldalias != newalias:
-                    print(f'* snippet modified (alias): [{oldalias}] => [{newalias}]')
+                    print(_('* snippet\'s alias changed: [{0}] => [{1}]').format(oldalias, newalias))
                     snip['prefix'] = newalias
                     self.modified.append((TYPE_GROUP, pkg['path'], snips_fn, snip_name))
-                else:
-                    print(f'* alias same: {newalias}')
 
                 # check if modified snippet body
                 oldbody = snip['body']
                 newbody = self.ed.get_text_all().split('\n') # line end is always 'lf'
                 if oldbody != newbody:
-                    print('* snip body changed:\n{0}\n ==>>\n{1}'.format('\n'.join(oldbody), '\n'.join(newbody)))
-                    if len(oldbody) != len(newbody):
-                        print(f'  + len changed:{len(oldbody)} => {len(newbody)}')
-                    else:
-                        for old,new in zip(oldbody, newbody):
-                            if old != new:
-                                print(f'  + changed line: [{old}] => [{new}]')
-                            else:
-                                print(f'  + v [{old}]')
-
+                    print(_('* snippet\'s body changed:\n{0}\n ==>>\n{1}').format('\n'.join(oldbody), '\n'.join(newbody)))
                     snip['body'] = newbody
                     self.modified.append((TYPE_GROUP, pkg['path'], snips_fn, snip_name)) 
-                else:
-                    print('* snip body same:\n{}'.format('\n'.join(newbody)))
 
         # save modified
         saved_files = set() # save each file only once
@@ -506,7 +586,7 @@ class DlgSnipMan:
                 type_, package_dir, snips_fn, snip_name = [*mod, None][0:4] # fourth item is optional : None
                 snips = self.file_snippets.get((package_dir, snips_fn))
                 if snips == None:
-                    print(f' ERR: trying to save snippets for unloaded group: {(package_dir, snips_fn)}')
+                    print(_('! ERROR: trying to save snippets for unloaded group: {0}').format((package_dir, snips_fn)))
                     continue
                     
                 data = snips
@@ -515,7 +595,7 @@ class DlgSnipMan:
                 raise Exception('Invalid Modified type: {mod}')
             
             if file_dst in saved_files:
-                print(f'* already saved, skipping: {file_dst}')
+                #pass; print('* already saved, skipping: {0}'.format(file_dst))
                 continue
             saved_files.add(file_dst)
             
@@ -524,10 +604,10 @@ class DlgSnipMan:
                 # DBG
                 if not file_dst.startswith(DATA_DIR):
                     raise Exception('Saving to Wrong directory({mod}): {file_dst}')
-                res = ct.msg_box('File modification allowed. Saving file:\n    '+file_dst}, 
+                res = ct.msg_box('File modification allowed. Saving file:\n    '+file_dst, 
                                                             ct.MB_OKCANCEL | ct.MB_ICONWARNING) 
                 if res == ct.ID_OK:
-                    print(f'*** saving data: {file_dst}')
+                    #pass; print('*** saving data: {0}'.format(file_dst))
                     
                     self.snippets_changed = True
                     
@@ -537,76 +617,68 @@ class DlgSnipMan:
                     
                     with open(file_dst, 'w', encoding='utf-8') as f:
                         json.dump(data, f, indent=2)
-                    print(f'    saved...')
-
-            else:
-                print(f'! fake saving: {file_dst}:\n{json.dumps(data, indent=2)}')
+                    print('    '+_('Saved.'))
+            # DBG - remove
+            else: 
+                print('! fake saving: {0}:\n{1}'.format(file_dst, json.dumps(data, indent=2)))
         
         ct.dlg_proc(self.h, ct.DLG_HIDE)
 
 
     def _dismiss_dlg(self, *args, **vargs):
         ct.dlg_proc(self.h, ct.DLG_HIDE)
-        #ct.dlg_proc(self.h, ct.DLG_FREE)
         
         
     def _on_snippet_selected(self, id_dlg, id_ctl, data='', info=''):
-        print('snip sel')
+        #pass; print('snip sel')
         pkg = self._get_sel_pkg()
         snips_fn,lexers = self._get_sel_group(pkg)
-        #snips = self.file_snippets.get(pkg['path'])
         snip_name,snip = self._get_sel_snip(pkg, snips_fn)
+
+        #pass; print(' snip sel:{0}: {1}'.format(snip_name, snip))
         
-        if snip_name == 'new' and snip == None:
-            self._create_snip(pkg, snips_fn)
+        if not all((pkg, snips_fn, snip_name, snip)):
             return
 
-        print(f' snip sel:{snip_name}: {snip}')
-
+        self._enable_ctls(True, self.n_alias, self.n_edit,  self.n_add_snip, self.n_del_snip)
+        
         ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=self.n_alias, prop={
                     'val': snip.get('prefix', ''),
-                    'en': True,
-                })
-        ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=self.n_edit, prop={
-                    'en': True,
                 })
         body = snip.get('body', [])
         txt = '\n'.join(body)  if type(body) == list else  body
         self.ed.set_text_all(txt)
-        # enable del_snip btn
-        ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=self.n_del_snip, prop={'en': True})
                     
         
     def _on_group_selected(self, id_dlg, id_ctl, data='', info=''):
-        print('group sel')
-        #print(f'combo sel:{args}, {vargs}')
+        #pass; print('group sel')
+        
         # disable all below 'group'
-        for n in [self.n_alias, self.n_edit] + [self.n_del_snip]:
-            ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=n, prop={
-                        'val': None,
-                        'en': False,
-                    })
+        self._enable_ctls(False, self.n_alias, self.n_edit,  self.n_add_snip, self.n_del_snip)
+        
         self.ed.set_text_all('')
         
         pkg = self._get_sel_pkg()
         snips_fn,lexers = self._get_sel_group(pkg) 
-
-        if snips_fn == 'new'  and lexers == None:
-            self._create_group(pkg)
-            return
         
-        print(f' * selected B:group: {snips_fn}, lexers:{lexers}')
+        #pass; print(' * selected B:group: {0}, lexers:{1}'.format(snips_fn, lexers))
+        
+        if not pkg or not snips_fn:
+            return
 
         if self.file_snippets.get((pkg['path'],snips_fn)) == None:
             self._load_package_snippets(pkg['path'])
-            print(f'   + loaded group snips')
+            #pass; print('   + loaded group snips')
 
+        
+        # enable stuff
+        self._enable_ctls(True, self.n_lex, self.n_snippets,  
+                            self.n_add_group, self.n_del_group, self.n_add_lex, self.n_add_snip)
         
         ### fill groups
         # lexers
         ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=self.n_lex, prop={
                     'val': ', '.join(lexers),
-                    'en': True,
                 })
                 
         # snippet names
@@ -615,117 +687,129 @@ class DlgSnipMan:
         snip_items.sort()
         self.snip_items = [*snip_items]
         
-        snip_items.insert(0, '[New...]')
         snip_items = '\t'.join(snip_items)
         ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=self.n_snippets, prop={
                     'val': None, # selected item
                     'items': snip_items,
-                    'en': True,
                 })
-        # enable del_group and add_lex btns
-        ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=self.n_del_group, prop={'en': True})
-        ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=self.n_add_lex, prop={'en': True})
+        
+        # set editor lexer to first existing lexer of group
+        if lexers:
+            ed_lex = self.ed.get_prop(ct.PROP_LEXER_FILE)
+            if not ed_lex  or ed_lex not in lexers: # dont change if current editor lex is in group
+                app_lexs = ct.lexer_proc(ct.LEXER_GET_LEXERS, '')
+                for lex in lexers:
+                    if lex in app_lexs:
+                        self.ed.set_prop(ct.PROP_LEXER_FILE, lex)
+            
         
     def _on_package_selected(self, id_dlg, id_ctl, data='', info=''):
-    #def _on_package_selected(self, *args, **vargs):
-        print('pkg sel')
-        #print(f'combo sel:{args}, {vargs}')
+        #pass; print('pkg sel')
         # disable all below 'group'
-        disable_btns = [self.n_del_group, self.n_add_lex, self.n_del_snip]
-        for n in [self.n_lex, self.n_snippets, self.n_alias, self.n_edit] + disable_btns:
-            ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=n, prop={
-                        'val': None,
-                        'en': False,
-                        'items': None,
-                    })
+        disable_btns = [self.n_add_group, self.n_del_group, self.n_add_lex, self.n_add_snip, self.n_del_snip]
+        self._enable_ctls(False, self.n_lex, self.n_snippets, self.n_alias, self.n_edit,  *disable_btns)
+        
         self.ed.set_text_all('')
         
         pkg = self._get_sel_pkg()
         
-        if pkg == 'new':
-            changed = self._create_pkg()
-            return
-        elif pkg == None: # no package selected
-            ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=self.n_groups, prop={'en': False,})
-            ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=self.n_del_pkg, prop={'en': False,})
+        if pkg == None: # no package selected
+            for n in [self.n_groups,  self.n_del_pkg]:
+                ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=n, prop={'en': False,})
+            self._groups_items = None
             return
 
-        print(f' * selected pkg: {pkg["name"]}')
+        #pass; print(' * selected pkg: {0}'.format(pkg["name"]))
 
         # fill groups
         items = list(pkg['files'])
         items.sort()
-        self._groups_items = [*items] #TODO reset when resetting
+        self._groups_items = [*items]
         
         # select package with specified lexer
         if self.select_lex and items:
             for i,lexs in enumerate(pkg.get('files', {}).values()):
                 if self.select_lex in lexs:
-                    items[i] += f'   (*{self.select_lex})'
+                    items[i] += '   (*{0})'.format(self.select_lex)
         
-        items.insert(0, '[New...]')
         items = '\t'.join(items)
+        
+        self._enable_ctls(True, self.n_groups,  self.n_add_pkg, self.n_del_pkg, self.n_add_group)
+        
         ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=self.n_groups, prop={
                     'val': None,
                     'en': True,
                     'items': items,
                 })
-        ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=self.n_del_pkg, prop={'en': True})
                 
-    def _create_snip(self, pkg, snips_fn):
-        print(f' ~~~ new C:snip ~~~: {pkg["path"]};  group:{snips_fn}')
-        name = ct.dlg_input('New snippet name:', '')
-        print(f' snip name: {name}')
-
+    #def _create_snip(self, pkg, snips_fn):
+    def _create_snip(self, id_dlg, id_ctl, data='', info=''):
+        pkg = self._get_sel_pkg()
+        snips_fn,lexers = self._get_sel_group(pkg)
+        if not pkg  or not snips_fn:
+            return
         
-        #TODO check if exists
+        #pass; print(' ~~~ new C:snip ~~~: {0};  group:{1}'.format(pkg["path"], snips_fn))
+        name = ct.dlg_input(_('New snippet name:'), '')
+        #pass; print(' snip name: {0}'.format(name))
+
         if name:
             snips = self.file_snippets.get((pkg['path'], snips_fn))
-            print(f'  snips:{snips}')
 
             if snips != None:
-                snips[name] = {'prefix':name, 'body':''}
-                self.modified.append((TYPE_GROUP, pkg['path'], snips_fn, name))
+                if name not in snips:
+                    snips[name] = {'prefix':name, 'body':''}
+                    self.modified.append((TYPE_GROUP, pkg['path'], snips_fn, name))
                 
-                # select new snip
-                self._fill_forms(sel_pkg_path=pkg['path'], sel_group=snips_fn, sel_snip=name)
+                    # select new snip
+                    self._fill_forms(sel_pkg_path=pkg['path'], sel_group=snips_fn, sel_snip=name)
+                else:
+                    print(_('"{0}" - snippet already exists.').format(name))
                 
                 
-    def _create_group(self, pkg):
-        print(f' ~~~ create new B:Group ===')
+    #def _create_group(self, pkg):
+    def _create_group(self, id_dlg, id_ctl, data='', info=''):
+        pkg = self._get_sel_pkg()
+        if not pkg:
+            return
+        
+        #pass; print(' ~~~ create new B:Group ===')
         lex = ct.ed.get_prop(ct.PROP_LEXER_FILE)
         name = lex  if lex else  'snippets'
-        #TODO check if exists
-        name = ct.dlg_input('New snippet group name:', name)
-        print(f'new group name:{name}')
+        name = ct.dlg_input('New snippet group filename:', name)
+        #pass; print('new group name:{0}'.format(name))
             
-        if name: #TODO add to modifieds (group and package)
+        if name:
             if not name.endswith('.json'):
                 name += '.json'
-            if name in pkg:
-                print(f'package already has group {name}')
+            if name in pkg['files']:
+                print(_('"{0}" - group already exists.').format(name))
+                return
             
             pkg['files'][name] = [lex]
-            self.file_snippets[(pkg['path'], name)] = {} #TODO check if exists
+            self.file_snippets[(pkg['path'], name)] = {}
             self.modified.append((TYPE_PKG, pkg['path']))
             self.modified.append((TYPE_GROUP, pkg['path'], name))
             
             # select new group
             self._fill_forms(sel_pkg_path=pkg['path'], sel_group=name)
             
-    #TODO check if exists
-    def _create_pkg(self):
-        print(f' ~~~ create new package ===') # TODO sort after new, select new
+    def _create_pkg(self, id_dlg, id_ctl, data='', info=''):
+        #pass; print(' ~~~ create new package ===')
         lex = ct.ed.get_prop(ct.PROP_LEXER_FILE)
         name = 'New_'+lex  if lex else  'NewPackage'
-        name = ct.dlg_input('New package name:', name)
-        print(f'new pkg name:{name}')
-
+        name = ct.dlg_input(_('New package name (should be a valid directory name):'), name)
+        #pass; print('new pkg name:{0}'.format(name))
             
-        if name: #TODO add to modifieds
+        if name:
             newpkg = {'name': name,
                         'files': {}, 
                         'path': os.path.join(MAIN_SNIP_DIR, name)}
+            
+            if os.path.exists(os.path.join(MAIN_SNIP_DIR, name, 'config.json')):
+                print(_('"{0}" - package already exists').format(os.path.join(MAIN_SNIP_DIR, name, 'config.json')))
+                return
+                        
             self.packages.append(newpkg) # update packages and select new
             self._sort_pkgs()
             self.modified.append((TYPE_PKG, newpkg['path']))
@@ -736,13 +820,13 @@ class DlgSnipMan:
         ''' show directory path to delete with OK|Cancel
             + remove from 'self.packages' if confirmed
         '''
-        print(f' del pkg {args};; {vargs}')
+        #pass; print('del pkg {0};; {1}'.format(args, vargs))
         pkg = self._get_sel_pkg()
         if not pkg:
             return
-        res = ct.dlg_input('To delete package "{}" - delete the following directory:'.format(pkg['name']), pkg['path'])
+        res = ct.dlg_input(_('To delete package "{}" - delete the following directory:').format(pkg['name']), pkg['path'])
         if res != None: # removeing
-            print('* confermed package deletion')
+            #pass; print('* confirmed package deletion')
             self.packages.remove(pkg)
             self._fill_forms()
             
@@ -751,24 +835,22 @@ class DlgSnipMan:
             + remove from package cfg
             + queue save of package cfg file
         '''
-        print(f' del group {args};; {vargs}')
+        #pass; print(' del group')
         pkg = self._get_sel_pkg()
         snips_fn,lexers = self._get_sel_group(pkg)
         
-        if (pkg and pkg != 'new')  and (snips_fn and snips_fn != 'new'):
-            fstr = 'To delete snippet group "{0}" from package "{1}" - delete the following file:'
+        if pkg  and snips_fn:
+            fstr = _('To delete snippet group "{0}" from package "{1}" - delete the following file:')
             group_filepath = os.path.join(pkg['path'], 'snippets', snips_fn)
             res = ct.dlg_input(fstr.format(snips_fn, pkg['name']), group_filepath)
             if res != None:
-                print('* confermed package deletion')
+                #pass; print('* confirmed group deletion')
                 del pkg['files'][snips_fn]
                 self.modified.append((TYPE_PKG, pkg['path'])) # package config is modified
                 self._fill_forms(sel_pkg_path=pkg['path'])
         
             
     def _menu_add_lex(self, *args, lex=None, **vargs):
-        ''' 
-        '''
         if lex == None: # initial call: show menu
             lexs = ct.lexer_proc(ct.LEXER_GET_LEXERS, '')
             
@@ -789,20 +871,19 @@ class DlgSnipMan:
             + remove from 'self.file_snippets' 
             + queue save of snippet group file
         '''
-        print(f' del snip {args};; {vargs}')
+        #pass; print(' del snip')
         pkg = self._get_sel_pkg()
         snips_fn,lexers = self._get_sel_group(pkg)
         snip_name,snip = self._get_sel_snip(pkg, snips_fn)
         
-        if (pkg and pkg != 'new')  and (snips_fn and snips_fn != 'new'):
-            if snip_name and not (snip_name == 'new' and snip == None):
-                res = ct.msg_box('Delete snippet "{0}"?'.format(snip_name), ct.MB_OKCANCEL | ct.MB_ICONWARNING)
-                if res == ct.ID_OK:
-                    snips = self.file_snippets.get((pkg['path'], snips_fn))
-                    if snip_name in snips: # removing from snips dict
-                        del snips[snip_name]
-                        self.modified.append((TYPE_GROUP, pkg['path'], snips_fn, snip_name))
-                        self._fill_forms(sel_pkg_path=pkg['path'], sel_group=snips_fn)
+        if pkg  and snips_fn  and snip_name  and snip:
+            res = ct.msg_box(_('Delete snippet "{0}"?').format(snip_name), ct.MB_OKCANCEL | ct.MB_ICONWARNING)
+            if res == ct.ID_OK:
+                snips = self.file_snippets.get((pkg['path'], snips_fn))
+                if snip_name in snips: # removing from snips dict
+                    del snips[snip_name]
+                    self.modified.append((TYPE_GROUP, pkg['path'], snips_fn, snip_name))
+                    self._fill_forms(sel_pkg_path=pkg['path'], sel_group=snips_fn)
                         
         
     def _load_package_snippets(self, package_path):
@@ -812,17 +893,17 @@ class DlgSnipMan:
             for snips_fn in pkg.get('files', {}): # filename, lexers
                 snips_path = os.path.join(package_path, 'snippets', snips_fn)
                 if not os.path.exists(snips_path):
-                    print(f' ERR: snips_path not file:{snips_path}')
+                    print(_('! ERROR: snippets path is not a file:{0}').format(snips_path))
                     continue
                 
                 with open(snips_path, 'r', encoding='utf-8') as f:
                     snips = json.load(f)
-                print(f' * loaded snips:{len(snips)}')
+                #pass; print(' * loaded snips:{0}'.format(len(snips)))
 
                 self.file_snippets[(package_path,snips_fn)] = snips
             return
         else:
-            print(' ERR: no suck pkg: {package_path}')
+            print(_('! ERROR: no such package: {0}').format(package_path))
 
         
     def _load_packages(self):
@@ -835,18 +916,12 @@ class DlgSnipMan:
                     continue
                 cfg_path = os.path.join(pkg, 'config.json')
                 if not os.path.exists(cfg_path):
-                    print("{} - it isn't package".format(cfg_path))
+                    print(_('! ERROR: {0} - is not a package').format(cfg_path))
                     return
                     
                 with open(cfg_path, 'r', encoding='utf8') as f:
                     cfg = json.load(f)
-                #lexers = set()
-                #for lx in cfg.get('files', {}).values():
-                    #lexers.update(lx)
-                #cfg.update(
-                    #{'path': pkg, 'type': sn_type, 'lexers': lexers, 'loaded': False}
-                #)
-                cfg['path'] = pkg.path #TODO remove path before saving
+                cfg['path'] = pkg.path
                 res.append(cfg)
         return res
         
@@ -858,10 +933,8 @@ class DlgSnipMan:
         isel = int(p['val'])
         if isel < 0:
             return None,None
-        elif isel == 0:
-            return 'new',None
         else:
-            name = self.snip_items[isel-1] # new is first
+            name = self.snip_items[isel] 
             snip = self.file_snippets[(pkg['path'], snip_fn)][name]
             return name,snip
         
@@ -870,10 +943,8 @@ class DlgSnipMan:
         isel = int(p['val'])
         if isel < 0:
             return None,None
-        elif isel == 0:
-            return 'new',None
         else:
-            filename = self._groups_items[isel-1]
+            filename = self._groups_items[isel]
             lexers = pkg['files'][filename]
             return filename,lexers
         
@@ -882,10 +953,55 @@ class DlgSnipMan:
         isel = int(p['val'])
         if isel < 0:
             return None
-        if isel == 0:
-            return 'new'
         else:
-            return self.packages[isel-1]
+            return self.packages[isel]
+            
+    def _menu_ed_lex(self, id_dlg, id_ctl, data='', info=''):
+        pkg = self._get_sel_pkg()
+        snips_fn,group_lexers = self._get_sel_group(pkg)
+        
+        group_lexers = set(group_lexers)  if group_lexers else  set()
+        
+        ### menu
+        h_menu = ct.menu_proc(0, ct.MENU_CREATE)
+        
+        # fill
+        app_lexs = ct.lexer_proc(ct.LEXER_GET_LEXERS, '')
+        for lex in app_lexs:
+            caption = '** '+lex  if lex in group_lexers else  lex # mark lexers of current snippet group
+            command = lambda l=lex: self.ed.set_prop(ct.PROP_LEXER_FILE, l)
+            ct.menu_proc(h_menu, ct.MENU_ADD, command=command, caption=caption)
+            
+        ct.menu_proc(h_menu, ct.MENU_SHOW)
         
     
+    def _enable_ctls(self, enable, *ns):
+        prop = {'en':enable, 'val': None, 'items': None,}
+        for n in ns:
+            ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=n, prop=prop)
+        
+        
+    def _dlg_help(self, *args, **vargs):
+        if self.h_help == None:
+            w, h = 750, 600
+            self.h_help = ct.dlg_proc(0, ct.DLG_CREATE)
+            ct.dlg_proc(self.h_help, ct.DLG_PROP_SET, 
+                        prop={'cap': _('Syntax Help'),
+                            'w': w,
+                            'h': h,
+                            'resize': True,
+                            }
+                        )
+                    
+            n = ct.dlg_proc(self.h_help, ct.DLG_CTL_ADD, 'memo')
+            ct.dlg_proc(self.h_help, ct.DLG_CTL_PROP_SET, index=n,
+                        prop={
+                            'name': 'help_memo',
+                            'align': ct.ALIGN_CLIENT,
+                            'val': HELP_TEXT,
+                            'sp_a':6,
+                            }
+                        )            
+                    
+        ct.dlg_proc(self.h_help, ct.DLG_SHOW_MODAL)
 
