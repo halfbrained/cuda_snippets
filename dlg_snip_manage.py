@@ -900,7 +900,7 @@ class DlgSnipMan:
         
     def _dlg_help(self, *args, **vargs):
         if self.h_help == None:
-            w, h = 500, 600
+            w, h = 750, 600
             self.h_help = ct.dlg_proc(0, ct.DLG_CREATE)
             ct.dlg_proc(self.h_help, ct.DLG_PROP_SET, 
                         prop={'cap': _('Syntax Help'),
@@ -916,6 +916,7 @@ class DlgSnipMan:
                             'name': 'help_memo',
                             'align': ct.ALIGN_CLIENT,
                             'val': HELP_TEXT,
+                            'sp_a':6,
                             }
                         )            
                     

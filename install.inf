@@ -21,7 +21,7 @@ method=do_menu
 
 [item30]
 section=commands
-caption=Snippets\Manage snippets...
+caption=Snippets\Add/edit snippets...
 method=show_snipman
 
 [item4]
