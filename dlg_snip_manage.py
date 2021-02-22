@@ -139,13 +139,30 @@ class DlgSnipMan:
         n = ct.dlg_proc(self.h, ct.DLG_CTL_ADD, 'button')
         ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=n,
                     prop={
-                        'name': 'help',
+                        'name': 'ed_lex',
                         'a_l': ('', '['),
                         'a_t': ('ok', '-'),
                         'a_r': None,
                         'a_b': ('',']'),
                         'w_min': 60,
                         'sp_a': 6,
+                        'autosize': True,
+                        'cap': _('Editor\'s Lexer'),  
+                        'on_change': self._menu_ed_lex,
+                        }
+                    )
+                    
+        n = ct.dlg_proc(self.h, ct.DLG_CTL_ADD, 'button')
+        ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=n,
+                    prop={
+                        'name': 'help',
+                        'a_l': ('ed_lex', ']'),
+                        'a_t': ('ok', '-'),
+                        'a_r': None,
+                        'a_b': ('',']'),
+                        'w_min': 60,
+                        'sp_a': 6,
+                        'sp_l': 10,
                         'autosize': True,
                         'cap': _('Macros Help'),  
                         'on_change': self._dlg_help,
@@ -675,6 +692,15 @@ class DlgSnipMan:
                     'val': None, # selected item
                     'items': snip_items,
                 })
+        
+        # set editor lexer to first existing lexer of group
+        if lexers:
+            ed_lex = self.ed.get_prop(ct.PROP_LEXER_FILE)
+            if not ed_lex  or ed_lex not in lexers: # dont change if current editor lex is in group
+                app_lexs = ct.lexer_proc(ct.LEXER_GET_LEXERS, '')
+                for lex in lexers:
+                    if lex in app_lexs:
+                        self.ed.set_prop(ct.PROP_LEXER_FILE, lex)
             
         
     def _on_package_selected(self, id_dlg, id_ctl, data='', info=''):
@@ -930,6 +956,24 @@ class DlgSnipMan:
         else:
             return self.packages[isel]
             
+    def _menu_ed_lex(self, id_dlg, id_ctl, data='', info=''):
+        pkg = self._get_sel_pkg()
+        snips_fn,group_lexers = self._get_sel_group(pkg)
+        
+        group_lexers = set(group_lexers)  if group_lexers else  set()
+        
+        ### menu
+        h_menu = ct.menu_proc(0, ct.MENU_CREATE)
+        
+        # fill
+        app_lexs = ct.lexer_proc(ct.LEXER_GET_LEXERS, '')
+        for lex in app_lexs:
+            caption = '** '+lex  if lex in group_lexers else  lex # mark lexers of current snippet group
+            command = lambda l=lex: self.ed.set_prop(ct.PROP_LEXER_FILE, l)
+            ct.menu_proc(h_menu, ct.MENU_ADD, command=command, caption=caption)
+            
+        ct.menu_proc(h_menu, ct.MENU_SHOW)
+        
     
     def _enable_ctls(self, enable, *ns):
         prop = {'en':enable, 'val': None, 'items': None,}
