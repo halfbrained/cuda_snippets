@@ -23,27 +23,72 @@ SNIP_DIRS = [
 TYPE_PKG = 101
 TYPE_GROUP = 102 
 
-#TODO check for proper filenames for filesystem
-#TODO handle same name packages
-#TODO sort modifieds before saving
 
-def log(s):
-    if True:
-        now = datetime.datetime.now()
-        with open('/media/q/cu.log', 'a', encoding='utf-8') as f:
-            f.write(now.strftime("%H:%M:%S ") + s + '\n')
+HELP_TEXT = """Markers:
+    ${NN} | ${NN:default text}
 
-#class DlgLexersCompare:
+Macros:
+    ${sel} - Text selected before snippet insertion (if snippet called with Tab key, it's empty string)
+    ${cp} - Current clipboard contents
+
+    ${cmt_start} - Current lexer's "block comment" start symbols (or empty string)
+    ${cmt_end} - Current lexer's "block comment" end symbols (or empty string)
+    ${cmt_line} - Current lexer's "line comment" symbols (or empty string)
+
+    ${fname} - File name only, without path
+    ${fpath} - Full file name, with path
+    ${fdir} - Directory of file
+    ${fext} - Extension of file
+    ${psep} - OS path separator: backslash on Windows, slash on Unix
+
+    ${date:nnnn} - Current date/time formatted by string "nnnn"; see Python docs
+    ${env:nnnn} - Value of OS environment variable "nnnn"
+    
+Sublime ($NAME | ${NAME}):
+    $TM_SELECTED_TEXT - The currently selected text or the empty string
+    $TM_CURRENT_LINE - The contents of the current line
+    $TM_CURRENT_WORD - The contents of the word under cursor or the empty string
+    $TM_LINE_INDEX - The zero-based line number
+    $TM_LINE_NUMBER - The one-based line number
+    $TM_FILEPATH - The full file path of the current document
+    $TM_DIRECTORY - The directory of the current document
+    $TM_FILENAME - The filename of the current document
+    $TM_FILENAME_BASE - The filename of the current document without its extensions
+    $CLIPBOARD - The contents of your clipboard
+    $WORKSPACE_NAME - The name of the opened workspace or folder
+
+    $BLOCK_COMMENT_START - Current lexer's "block comment" start symbols (or empty string)
+    $BLOCK_COMMENT_END - Current lexer's "block comment" end symbols (or empty string)
+    $LINE_COMMENT - Current lexer's "line comment" symbols (or empty string)
+    
+Date, time:
+    $CURRENT_YEAR - The current year
+    $CURRENT_YEAR_SHORT - The current year's last two digits
+    $CURRENT_MONTH - The month as two digits (e.g. '02')
+    $CURRENT_MONTH_NAME - The full name of the month (e.g. 'July')
+    $CURRENT_MONTH_NAME_SHORT - The short name of the month (e.g. 'Jul')
+    $CURRENT_DATE - The day of the month
+    $CURRENT_DAY_NAME - The name of day (e.g. 'Monday')
+    $CURRENT_DAY_NAME_SHORT - The short name of the day (e.g. 'Mon')
+    $CURRENT_HOUR - The current hour in 24-hour clock format
+    $CURRENT_MINUTE - The current minute
+    $CURRENT_SECOND - The current second
+    $CURRENT_SECONDS_UNIX - The number of seconds since the Unix epoch
+"""
+
+
 class DlgSnipMan:
     def __init__(self, select_lex=None):
         self.select_lex = select_lex # select first group with this lexer, mark in menus
         
         self.snippets_changed = False
+        self.h_help = None
         
         self.packages = self._load_packages()
         self._sort_pkgs()
         self.file_snippets = {} # tuple (<pkg path>,<group>) : snippet dict
         self.modified = [] # (type, name)
+    
 
         w, h = 500, 400
         self.h = ct.dlg_proc(0, ct.DLG_CREATE)
@@ -59,7 +104,7 @@ class DlgSnipMan:
  
         ### Controls
         
-        # Cancel | Ok
+        # Cancel | Ok | Help
         self.n_ok = ct.dlg_proc(self.h, ct.DLG_CTL_ADD, 'button')
         ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=self.n_ok,
                     prop={
@@ -95,6 +140,25 @@ class DlgSnipMan:
                         'autosize': True,
                         'cap': 'Cancel',  
                         'on_change': self._dismiss_dlg,
+                        }
+                    )
+                    
+        n = ct.dlg_proc(self.h, ct.DLG_CTL_ADD, 'button')
+        ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=n,
+                    prop={
+                        'name': 'help',
+                        'a_l': ('', '['),
+                        'a_t': ('ok', '-'),
+                        'a_r': None,
+                        'a_b': ('',']'),
+                        'w': 30,
+                        #'h_max': 30,
+                        'w_min': 60,
+                        'sp_a': 6,
+                        #'sp_t': 6,
+                        'autosize': True,
+                        'cap': 'Macros Help',  
+                        'on_change': self._dlg_help,
                         }
                     )
                     
@@ -306,8 +370,6 @@ class DlgSnipMan:
                         'on_change': self._on_snippet_selected,
                         'act': True,
                         'en': False,
-                        'cap': 'lol?',
-                        'hint': 'crap!',
                         }
                     )
                     
@@ -369,7 +431,7 @@ class DlgSnipMan:
     def _fill_forms(self, init_lex_sel=None, sel_pkg_path=None, sel_group=None, sel_snip=None):
         # fill packages
         items = [pkg.get('name') for pkg in self.packages]
-        self.pkg_items = [*items] #TODO use
+        self.pkg_items = [*items]
         
         # select first group with <lexer>
         if init_lex_sel:
@@ -428,6 +490,10 @@ class DlgSnipMan:
         ct.dlg_proc(self.h, ct.DLG_SHOW_MODAL)
         #ct.dlg_proc(self.h, ct.DLG_SHOW_NONMODAL)
         ct.dlg_proc(self.h, ct.DLG_FREE)
+        
+        if self.h_help != None:
+            ct.dlg_proc(self.h_help, ct.DLG_FREE)
+            
         '!!! changed'
         #import sys
         #sys.exit(0)
@@ -441,7 +507,7 @@ class DlgSnipMan:
         #snips = self.file_snippets.get(pkg['path'])
         snip_name,snip = self._get_sel_snip(pkg, snips_fn)  if lexers != None else  (None,None)
         
-        print(f' + {pkg["name"]} # {snips_fn}, [{lexers}] # <{snip_name}>:<{snip}>')
+        print(f' + {pkg["name"] if pkg else "<no_pkg>"} # {snips_fn}, [{lexers}] # <{snip_name}>:<{snip}>')
         
         ### load data from form
         # check if modified group's lexers
@@ -648,6 +714,7 @@ class DlgSnipMan:
         elif pkg == None: # no package selected
             ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=self.n_groups, prop={'en': False,})
             ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=self.n_del_pkg, prop={'en': False,})
+            self._groups_items = None
             return
 
         print(f' * selected pkg: {pkg["name"]}')
@@ -655,7 +722,7 @@ class DlgSnipMan:
         # fill groups
         items = list(pkg['files'])
         items.sort()
-        self._groups_items = [*items] #TODO reset when resetting
+        self._groups_items = [*items]
         
         # select package with specified lexer
         if self.select_lex and items:
@@ -677,55 +744,59 @@ class DlgSnipMan:
         name = ct.dlg_input('New snippet name:', '')
         print(f' snip name: {name}')
 
-        
-        #TODO check if exists
         if name:
             snips = self.file_snippets.get((pkg['path'], snips_fn))
             print(f'  snips:{snips}')
 
             if snips != None:
-                snips[name] = {'prefix':name, 'body':''}
-                self.modified.append((TYPE_GROUP, pkg['path'], snips_fn, name))
+                if name not in snips:
+                    snips[name] = {'prefix':name, 'body':''}
+                    self.modified.append((TYPE_GROUP, pkg['path'], snips_fn, name))
                 
-                # select new snip
-                self._fill_forms(sel_pkg_path=pkg['path'], sel_group=snips_fn, sel_snip=name)
+                    # select new snip
+                    self._fill_forms(sel_pkg_path=pkg['path'], sel_group=snips_fn, sel_snip=name)
+                else:
+                    print('"{0}" - snippet already exists.'.format(name))
                 
                 
     def _create_group(self, pkg):
         print(f' ~~~ create new B:Group ===')
         lex = ct.ed.get_prop(ct.PROP_LEXER_FILE)
         name = lex  if lex else  'snippets'
-        #TODO check if exists
-        name = ct.dlg_input('New snippet group name:', name)
+        name = ct.dlg_input('New snippet group filename:', name)
         print(f'new group name:{name}')
             
-        if name: #TODO add to modifieds (group and package)
+        if name:
             if not name.endswith('.json'):
                 name += '.json'
-            if name in pkg:
-                print(f'package already has group {name}')
+            if name in pkg['files']:
+                print('"{0}" - group already exists.'.format(name))
+                return
             
             pkg['files'][name] = [lex]
-            self.file_snippets[(pkg['path'], name)] = {} #TODO check if exists
+            self.file_snippets[(pkg['path'], name)] = {}
             self.modified.append((TYPE_PKG, pkg['path']))
             self.modified.append((TYPE_GROUP, pkg['path'], name))
             
             # select new group
             self._fill_forms(sel_pkg_path=pkg['path'], sel_group=name)
             
-    #TODO check if exists
     def _create_pkg(self):
-        print(f' ~~~ create new package ===') # TODO sort after new, select new
+        print(f' ~~~ create new package ===')
         lex = ct.ed.get_prop(ct.PROP_LEXER_FILE)
         name = 'New_'+lex  if lex else  'NewPackage'
-        name = ct.dlg_input('New package name:', name)
+        name = ct.dlg_input('New package name (should be a valid directory name):', name)
         print(f'new pkg name:{name}')
-
             
-        if name: #TODO add to modifieds
+        if name:
             newpkg = {'name': name,
                         'files': {}, 
                         'path': os.path.join(MAIN_SNIP_DIR, name)}
+            
+            if os.path.exists(os.path.join(MAIN_SNIP_DIR, name, 'config.json')):
+                print('"{0}" - package already exists'.format(os.path.join(MAIN_SNIP_DIR, name, 'config.json')))
+                return
+                        
             self.packages.append(newpkg) # update packages and select new
             self._sort_pkgs()
             self.modified.append((TYPE_PKG, newpkg['path']))
@@ -767,8 +838,6 @@ class DlgSnipMan:
         
             
     def _menu_add_lex(self, *args, lex=None, **vargs):
-        ''' 
-        '''
         if lex == None: # initial call: show menu
             lexs = ct.lexer_proc(ct.LEXER_GET_LEXERS, '')
             
@@ -840,13 +909,7 @@ class DlgSnipMan:
                     
                 with open(cfg_path, 'r', encoding='utf8') as f:
                     cfg = json.load(f)
-                #lexers = set()
-                #for lx in cfg.get('files', {}).values():
-                    #lexers.update(lx)
-                #cfg.update(
-                    #{'path': pkg, 'type': sn_type, 'lexers': lexers, 'loaded': False}
-                #)
-                cfg['path'] = pkg.path #TODO remove path before saving
+                cfg['path'] = pkg.path
                 res.append(cfg)
         return res
         
@@ -887,5 +950,26 @@ class DlgSnipMan:
         else:
             return self.packages[isel-1]
         
-    
+    def _dlg_help(self, *args, **vargs):
+        if self.h_help == None:
+            w, h = 500, 600
+            self.h_help = ct.dlg_proc(0, ct.DLG_CREATE)
+            ct.dlg_proc(self.h_help, ct.DLG_PROP_SET, 
+                        prop={'cap': _('Syntax Help'),
+                            'w': w,
+                            'h': h,
+                            'resize': True,
+                            }
+                        )
+                    
+            n = ct.dlg_proc(self.h_help, ct.DLG_CTL_ADD, 'memo')
+            ct.dlg_proc(self.h_help, ct.DLG_CTL_PROP_SET, index=n,
+                        prop={
+                            'name': 'help_memo',
+                            'align': ct.ALIGN_CLIENT,
+                            'val': HELP_TEXT,
+                            }
+                        )            
+                    
+        ct.dlg_proc(self.h_help, ct.DLG_SHOW_MODAL)
 
