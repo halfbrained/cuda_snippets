@@ -524,7 +524,7 @@ class DlgSnipMan:
                 # DBG
                 if not file_dst.startswith(DATA_DIR):
                     raise Exception('Saving to Wrong directory({mod}): {file_dst}')
-                res = ct.msg_box('File modification allowed. Saving file:\n    '+file_dst}, 
+                res = ct.msg_box('File modification allowed. Saving file:\n    '+file_dst, 
                                                             ct.MB_OKCANCEL | ct.MB_ICONWARNING) 
                 if res == ct.ID_OK:
                     print(f'*** saving data: {file_dst}')
