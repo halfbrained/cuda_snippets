@@ -11,8 +11,6 @@ from cudax_lib import get_translation
 _   = get_translation(__file__)  # I18N
 
 
-ALLOW_FILE_MODIFICATION = False
-        
 DATA_DIR = ct.app_path(ct.APP_DIR_DATA)
 MAIN_SNIP_DIR = os.path.join(DATA_DIR, 'snippets_ct')
 SNIP_DIRS = [
@@ -463,7 +461,6 @@ class DlgSnipMan:
     def _fill_forms(self, init_lex_sel=None, sel_pkg_path=None, sel_group=None, sel_snip=None):
         # fill packages
         items = [pkg.get('name') for pkg in self.packages]
-        self.pkg_items = [*items]
         
         # select first group with <lexer>
         if init_lex_sel:
@@ -478,7 +475,7 @@ class DlgSnipMan:
                         break
                 if found:
                     break
-        # select package with specified lexer
+        # mark packages with specified lexer
         if self.select_lex:
             for i,pkg in enumerate(self.packages):
                 for fn,lexs in pkg.get('files', {}).items():
@@ -493,7 +490,7 @@ class DlgSnipMan:
         sel_pkg = None
         # select package, if specified
         if sel_pkg_path: # select new package:
-            # fine selected package
+            # find selected package
             for i,pkg in enumerate(self.packages):
                 if pkg['path'] == sel_pkg_path:
                     sel_pkg_ind = i
@@ -598,29 +595,20 @@ class DlgSnipMan:
                 #pass; print('* already saved, skipping: {0}'.format(file_dst))
                 continue
             saved_files.add(file_dst)
-            
                 
-            if ALLOW_FILE_MODIFICATION:
-                # DBG
-                if not file_dst.startswith(DATA_DIR):
-                    raise Exception('Saving to Wrong directory({mod}): {file_dst}')
-                res = ct.msg_box('File modification allowed. Saving file:\n    '+file_dst, 
-                                                            ct.MB_OKCANCEL | ct.MB_ICONWARNING) 
-                if res == ct.ID_OK:
-                    #pass; print('*** saving data: {0}'.format(file_dst))
+            #pass; print('*** saving data: {0}'.format(file_dst))
                     
-                    self.snippets_changed = True
+            self.snippets_changed = True
                     
-                    folder = os.path.dirname(file_dst)
-                    if not os.path.exists(folder):
-                        os.makedirs(folder)
+            folder = os.path.dirname(file_dst)
+            if not os.path.exists(folder):
+                os.makedirs(folder)
                     
-                    with open(file_dst, 'w', encoding='utf-8') as f:
-                        json.dump(data, f, indent=2)
-                    print('    '+_('Saved.'))
-            # DBG - remove
-            else: 
-                print('! fake saving: {0}:\n{1}'.format(file_dst, json.dumps(data, indent=2)))
+            with open(file_dst, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2)
+                
+        if self.modified:    
+            print('    '+_('Saved.'))
         
         ct.dlg_proc(self.h, ct.DLG_HIDE)
 
@@ -741,6 +729,12 @@ class DlgSnipMan:
                     'en': True,
                     'items': items,
                 })
+                
+        # if have only one snip file - select it
+        if id_dlg != -1  and len(pkg.get('files', {})) == 1: # -1 - called manually (from fill_forms())
+            ct.dlg_proc(self.h, ct.DLG_CTL_PROP_SET, index=self.n_groups, prop={'val': 0})
+            self._on_group_selected(-1,-1)
+            
                 
     #def _create_snip(self, pkg, snips_fn):
     def _create_snip(self, id_dlg, id_ctl, data='', info=''):
@@ -910,7 +904,7 @@ class DlgSnipMan:
         res = [] # list of configs
         for path in SNIP_DIRS:
             if not os.path.exists(path):
-                return
+                continue
             for pkg in os.scandir(path):
                 if not pkg.is_dir():
                     continue
