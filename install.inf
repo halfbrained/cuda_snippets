@@ -21,8 +21,8 @@ method=do_menu
 
 [item30]
 section=commands
-caption=Snippets\Add snippet...
-method=show_add_snippet
+caption=Snippets\Manage snippets...
+method=show_snipman
 
 [item4]
 section=commands

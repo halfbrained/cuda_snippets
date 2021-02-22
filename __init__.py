@@ -80,28 +80,17 @@ class Command:
     def do_menu(self):
         self.menu_dlg(self.lex_snippets)
         
-    '!!! WORK'
-    def show_add_snippet(self):
+    def show_snipman(self):
         from cuda_snippets.dlg_snip_manage import DlgSnipMan
         
-        try:
-            lex = ct.ed.get_prop(ct.PROP_LEXER_FILE)
-            dlg_add = DlgSnipMan(select_lex=lex)
-            self._dlg = dlg_add # DBG
-            changed = dlg_add.show_add_snip()
-        except Exception as ex:
-            import traceback
-            print(f' exc: {ex}')
-            traceback.print_exc()
-            changed = False
+        lex = ct.ed.get_prop(ct.PROP_LEXER_FILE)
+        dlg_add = DlgSnipMan(select_lex=lex)
+        changed = dlg_add.show_add_snip()
 
+        # reload loaded snippets
         if changed:
             self.loader = sn.Loader(DATA_DIR)
             
-    def _del(self):
-        print(f'!selected')
-
-
     def install_vs_snip(self):
         # need import here, not at the top, for faster load cudatext
         from cuda_snippets import vs
