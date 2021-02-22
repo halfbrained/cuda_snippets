@@ -87,7 +87,6 @@ class DlgSnipMan:
         self.file_snippets = {} # tuple (<pkg path>,<group>) : snippet dict
         self.modified = [] # (type, name)
     
-
         w, h = 500, 400
         self.h = ct.dlg_proc(0, ct.DLG_CREATE)
         ct.dlg_proc(self.h, ct.DLG_PROP_SET, 
@@ -681,7 +680,7 @@ class DlgSnipMan:
                     'items': snip_items,
                 })
         
-        # set editor lexer to first existing lexer of group
+        # set editor lexer to first existing lexer of snippet group
         if lexers:
             ed_lex = self.ed.get_prop(ct.PROP_LEXER_FILE)
             if not ed_lex  or ed_lex not in lexers: # dont change if current editor lex is in group
@@ -748,7 +747,7 @@ class DlgSnipMan:
         #pass; print(' snip name: {0}'.format(name))
 
         if name:
-            snips = self.file_snippets.get((pkg['path'], snips_fn))
+            snips = self.file_snippets.get((pkg['path'], snips_fn)) # snippets of selected group will be loaded
 
             if snips != None:
                 if name not in snips:
@@ -776,7 +775,8 @@ class DlgSnipMan:
         if name:
             if not name.endswith('.json'):
                 name += '.json'
-            if name in pkg['files']:
+            # checking for file in case of case-insensitive filesystem
+            if os.path.exists(os.path.join(pkg['path'], 'snippets', name)):
                 print(_('"{0}" - group already exists.').format(name))
                 return
             
@@ -911,7 +911,7 @@ class DlgSnipMan:
                 cfg_path = os.path.join(pkg, 'config.json')
                 if not os.path.exists(cfg_path):
                     print(_('! ERROR: {0} - is not a package').format(cfg_path))
-                    return
+                    continue
                     
                 with open(cfg_path, 'r', encoding='utf8') as f:
                     cfg = json.load(f)
