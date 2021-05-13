@@ -19,7 +19,7 @@ PLACEHOLDER = 1
 RE_DATE = re.compile(r'\${date:(.*?)}')
 RE_ENV = re.compile(r'\${env:(.*?)}')
 
-_tabstop = r"\$(\d+)"
+_tabstop = r"\\?\$(\d+)"
 _placeholder_head = r"\${(\d+):?"
 _placeholder_tail = "}"
 RE_TABSTOP = re.compile(_tabstop)
@@ -373,18 +373,25 @@ class Snippet:
             for t in RE_TOKEN_PART.finditer(ln):
 
                 if is_tabstop(t[0]):
-                    _tag = int(t[1])
-                    m = marker(
-                        x=t.start(0) + shift + (x0 if y == 0 else 0),
-                        y=y+y0,
-                        tag=_tag + basetag
-                    )
-                    if _tag == 0:
-                        zero_markers.append(m)
-                    else:
-                        markers.append(m)
-                    new_ln = get_new_ln(new_ln, shift, t)
-                    shift -= len(t[0])
+                    # check for escaped tabstop: "\$n"
+                    if t[0][0] == '\\':
+                        _start = t.start(0)
+                        new_ln = new_ln[:_start] + new_ln[_start+1:]
+                        shift -= 1
+
+                    else:   # work normally
+                        _tag = int(t[1])
+                        m = marker(
+                            x=t.start(0) + shift + (x0 if y == 0 else 0),
+                            y=y+y0,
+                            tag=_tag + basetag
+                        )
+                        if _tag == 0:
+                            zero_markers.append(m)
+                        else:
+                            markers.append(m)
+                        new_ln = get_new_ln(new_ln, shift, t)
+                        shift -= len(t[0])
 
                 elif is_placeholder_head(t[0]):
                     p = Placeholder(
