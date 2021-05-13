@@ -1,6 +1,9 @@
 
+2021.05.13
++ add: things like '$0' work in snippet body, if escaped to '\$0' (patch by @halfbrained)
+
 2021.02.22
-+ add: command "Add/edit snippets", which shows new dialog; big patch by Shovel (@halfbrained)
++ add: command "Add/edit snippets", which shows new dialog (patch by @halfbrained)
 
 2020.12.22
 + add: support for translation files (patches by Markus)
