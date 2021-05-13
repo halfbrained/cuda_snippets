@@ -1,4 +1,7 @@
 
+2021.02.22
++ add: command "Add/edit snippets", which shows new dialog; big patch by Shovel (@halfbrained)
+
 2020.12.22
 + add: support for translation files (patches by Markus)
 

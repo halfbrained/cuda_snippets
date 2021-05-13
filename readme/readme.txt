@@ -36,5 +36,6 @@ This includes support of TextMate snippet macros:
 
 Authors:
   Alexey Torgashin (CudaText)
-  Oleh Lutsak (https://github.com/OlehL)
+  Oleh Lutsak ( https://github.com/OlehL/ )
+  Shovel ( https://github.com/halfbrained/ )
 License: MIT
